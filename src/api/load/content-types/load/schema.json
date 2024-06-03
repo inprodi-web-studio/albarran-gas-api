@@ -1,0 +1,18 @@
+{
+  "kind": "collectionType",
+  "collectionName": "loads",
+  "info": {
+    "singularName": "load",
+    "pluralName": "loads",
+    "displayName": "Load"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uuid": {
+      "type": "string"
+    }
+  }
+}

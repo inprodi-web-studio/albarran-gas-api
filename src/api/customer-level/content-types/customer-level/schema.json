@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "customer_levels",
+  "info": {
+    "singularName": "customer-level",
+    "pluralName": "customer-levels",
+    "displayName": "Customer Level"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uuid": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  }
+}

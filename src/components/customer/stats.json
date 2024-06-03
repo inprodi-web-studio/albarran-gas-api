@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_customer_stats",
+  "info": {
+    "displayName": "stats"
+  },
+  "options": {},
+  "attributes": {
+    "totalLiters": {
+      "type": "decimal",
+      "default": 0
+    },
+    "totalSavings": {
+      "type": "decimal",
+      "default": 0
+    }
+  }
+}
