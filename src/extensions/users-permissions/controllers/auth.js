@@ -4,10 +4,12 @@ const {
     validateValidateCode,
     validateForgotPassword,
     validateResetPassword,
+    validateSetBombs,
 } = require("../validation");
 
 const {
     USER,
+    BOMB,
 } = require("../../../constants/models");
 
 const {
@@ -16,7 +18,7 @@ const {
     findOneByUuid,
     generateRandomCode,
 } = require("../../../helpers");
-const { BadRequestError } = require("../../../helpers/errors");
+const { BadRequestError, NotFoundError } = require("../../../helpers/errors");
 
 module.exports = (plugin) => {
     plugin.controllers.auth["login_Customer"] = async (ctx) => {
@@ -30,6 +32,13 @@ module.exports = (plugin) => {
         } = data;
 
         const customer = await findOneByAny(email, USER, "email");
+
+        if ( customer.type !== "customer" ) {
+            throw new NotFoundError( "Customer not found", {
+                key : "auth.customerNotFound",
+                path : ctx.request.path,
+            });
+        }
 
         await plugin.services.validateUserContext(password, customer);
 
@@ -77,6 +86,7 @@ module.exports = (plugin) => {
                 blocked           : false,
                 provider          : "local",
                 confirmationToken : code,
+                type              : "customer",
             },
         });
 
@@ -191,5 +201,90 @@ module.exports = (plugin) => {
         return {
             message : "ok",
         };
-    }
+    };
+
+    plugin.controllers.auth["login_Dispatcher"] = async (ctx) => {
+        const data = ctx.request.body;
+
+        await validateLogin(data);
+        
+        const {
+            email,
+            password,
+        } = data;
+
+        const dispatcher = await findOneByAny(email, USER, "email");
+
+        if ( dispatcher.type !== "dispatcher" ) {
+            throw new NotFoundError( "Dispatcher not found", {
+                key : "auth.dispatcherNotFound",
+                path : ctx.request.path,
+            });
+        }
+
+        await plugin.services.validateUserContext(password, dispatcher);
+
+        const TOKEN = generateToken({
+            id : dispatcher.id,
+        });
+
+        return {
+            token     : TOKEN,
+            uuid      : dispatcher.uuid,
+            name      : dispatcher.name,
+            lastName  : dispatcher.lastName,
+            email     : dispatcher.email,
+        };
+    };
+
+    plugin.controllers.auth["setBombs_Dispatcher"] = async (ctx) => {
+        const data = ctx.request.body;
+        const dispatcher = ctx.state.user;
+    
+        await validateSetBombs(data);
+    
+        const { bombs } = data;
+    
+        const conflictSessions = [];
+
+        for (let i = 0; i < bombs.length; i++) {
+            const bomb = bombs[i];
+    
+            const conflictSession = await strapi.query(BOMB).findOne({
+                where: {
+                    bomb: bomb,
+                },
+            });
+    
+            if ( conflictSession ) {
+                conflictSessions.push({
+                    bomdId: bomb,
+                    path: ctx.request.path
+                });
+            }
+        }
+    
+        if ( conflictSessions.length > 0 ) {
+            throw new BadRequestError("There are bombs that are already in use in the selection", {
+                key: "auth.bombAlreadyInUse",
+                conflicts: conflictSessions
+            });
+        }
+    
+        const createPromises = bombs.map(({ bomb }) =>
+            strapi.entityService.create( BOMB, {
+                data: {
+                    bomb       : bomb,
+                    dispatcher : dispatcher.id
+                },
+            })
+        );
+    
+        await Promise.all( createPromises );
+
+        return {
+            status : "success",
+            message : bombs.length + " bombs assigned",
+        };
+    };    
 };

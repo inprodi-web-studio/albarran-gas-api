@@ -362,12 +362,41 @@ export interface AdminTransferTokenPermission extends Schema.CollectionType {
   };
 }
 
+export interface ApiBombBomb extends Schema.CollectionType {
+  collectionName: 'bombs';
+  info: {
+    singularName: 'bomb';
+    pluralName: 'bombs';
+    displayName: 'Bomb';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    dispatcher: Attribute.Relation<
+      'api::bomb.bomb',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    bomb: Attribute.Integer;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+  };
+}
+
 export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
   collectionName: 'customer_levels';
   info: {
     singularName: 'customer-level';
     pluralName: 'customer-levels';
     displayName: 'Customer Level';
+    description: '';
   };
   options: {
     draftAndPublish: false;
@@ -375,6 +404,9 @@ export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
   attributes: {
     uuid: Attribute.String;
     name: Attribute.String;
+    min: Attribute.Decimal;
+    max: Attribute.Decimal;
+    discount: Attribute.Decimal;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -398,12 +430,23 @@ export interface ApiLoadLoad extends Schema.CollectionType {
     singularName: 'load';
     pluralName: 'loads';
     displayName: 'Load';
+    description: '';
   };
   options: {
     draftAndPublish: false;
   };
   attributes: {
     uuid: Attribute.String;
+    customer: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    product: Attribute.String;
+    quantity: Attribute.Decimal;
+    price: Attribute.Decimal;
+    total: Attribute.Decimal;
+    discount: Attribute.Decimal;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
@@ -808,6 +851,17 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
     customerInfo: Attribute.Component<'customer.customer-info'>;
     gender: Attribute.String;
     birthdate: Attribute.String;
+    type: Attribute.String;
+    bombsInUse: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::bomb.bomb'
+    >;
+    loads: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::load.load'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -835,6 +889,7 @@ declare module '@strapi/types' {
       'admin::api-token-permission': AdminApiTokenPermission;
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
+      'api::bomb.bomb': ApiBombBomb;
       'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
       'api::load.load': ApiLoadLoad;
       'plugin::upload.file': PluginUploadFile;

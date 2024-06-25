@@ -1,10 +1,10 @@
-const { USER } = require("../constants/models");
+const { USER, BOMB, LOAD } = require("../constants/models");
 
 const roles = {
     public : {
         permissions : {
             [USER] : {
-                auth : ["login_Customer", "register_Customer", "validateCode_Customer", "forgotPassword_Customer"],
+                auth : ["login_Customer", "login_Dispatcher", "register_Customer", "validateCode_Customer", "forgotPassword_Customer"],
             },
         },
         meta : {
@@ -22,6 +22,19 @@ const roles = {
         meta : {
             type        : "customer",
             description : "customer",
+        },
+    },
+    dispatcher : {
+        permissions : {
+            [USER] : {
+                auth : ["setBombs_Dispatcher"],
+            },
+            [BOMB] : ["find"],
+            [LOAD] : ["getLoads"],
+        },
+        meta : {
+            type        : "dispatcher",
+            description : "dispatcher",
         },
     },
     "super-admin" : {

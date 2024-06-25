@@ -91,6 +91,21 @@
     },
     "birthdate": {
       "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "bombsInUse": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::bomb.bomb",
+      "mappedBy": "dispatcher"
+    },
+    "loads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::load.load",
+      "mappedBy": "customer"
     }
   }
 }

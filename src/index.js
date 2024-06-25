@@ -2,7 +2,7 @@
 
 const { uuid } = require("uuidv4");
 
-const { USER } = require("./constants/models");
+const { USER, BOMB, LOAD, CUSTOMER_LEVEL } = require("./constants/models");
 
 module.exports = {
   register(/*{ strapi }*/) {},
@@ -11,6 +11,9 @@ module.exports = {
     strapi.db.lifecycles.subscribe({
       models : [
         USER,
+        BOMB,
+        LOAD,
+        CUSTOMER_LEVEL,
       ],
       async beforeCreate( event ) {
         const { data } = event.params;

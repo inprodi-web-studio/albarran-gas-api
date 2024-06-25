@@ -18,7 +18,7 @@ const permissionsParser = (ROLE) => {
             controllers : {},
         };
 
-        if ( typeof roles[ROLE].permissions[MODEL] === "object" ) {
+        if ( typeof roles[ROLE].permissions[MODEL] === "object" && !Array.isArray( roles[ROLE].permissions[MODEL] ) ) {
             const keys = Object.keys( roles[ROLE].permissions[MODEL] );
 
             for ( const subModule of keys ) {

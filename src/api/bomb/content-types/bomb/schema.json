@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "bombs",
+  "info": {
+    "singularName": "bomb",
+    "pluralName": "bombs",
+    "displayName": "Bomb",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uuid": {
+      "type": "string"
+    },
+    "dispatcher": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "bombsInUse"
+    },
+    "bomb": {
+      "type": "integer"
+    }
+  }
+}

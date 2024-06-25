@@ -43,4 +43,22 @@ module.exports = ( plugin ) => {
             prefix : "",
         },
     });
+
+    plugin.routes["content-api"].routes.push({
+        method  : "POST",
+        path    : "/dispatcher/auth/login",
+        handler : "auth.login_Dispatcher",
+        config  : {
+            prefix : "",
+        },
+    });
+
+    plugin.routes["content-api"].routes.push({
+        method  : "PATCH",
+        path    : "/dispatcher/auth/set-bombs",
+        handler : "auth.setBombs_Dispatcher",
+        config  : {
+            prefix : "",
+        },
+    });
 }
