@@ -6,6 +6,7 @@ const assignLoadSchema = yup.object().shape({
     quantity : yup.number().min(0).required(),
     price : yup.number().min(0).required(),
     total : yup.number().min(0).required(),
+    date : yup.string().required(),
 }).noUnknown().strict();
 
 

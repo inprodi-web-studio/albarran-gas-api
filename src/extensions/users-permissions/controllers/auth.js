@@ -271,7 +271,7 @@ module.exports = (plugin) => {
             });
         }
     
-        const createPromises = bombs.map(({ bomb }) =>
+        const createPromises = bombs.map(( bomb ) =>
             strapi.entityService.create( BOMB, {
                 data: {
                     bomb       : bomb,

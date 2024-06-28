@@ -362,100 +362,6 @@ export interface AdminTransferTokenPermission extends Schema.CollectionType {
   };
 }
 
-export interface ApiBombBomb extends Schema.CollectionType {
-  collectionName: 'bombs';
-  info: {
-    singularName: 'bomb';
-    pluralName: 'bombs';
-    displayName: 'Bomb';
-    description: '';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    uuid: Attribute.String;
-    dispatcher: Attribute.Relation<
-      'api::bomb.bomb',
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
-    bomb: Attribute.Integer;
-    createdAt: Attribute.DateTime;
-    updatedAt: Attribute.DateTime;
-    createdBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
-      Attribute.Private;
-    updatedBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
-      Attribute.Private;
-  };
-}
-
-export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
-  collectionName: 'customer_levels';
-  info: {
-    singularName: 'customer-level';
-    pluralName: 'customer-levels';
-    displayName: 'Customer Level';
-    description: '';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    uuid: Attribute.String;
-    name: Attribute.String;
-    min: Attribute.Decimal;
-    max: Attribute.Decimal;
-    discount: Attribute.Decimal;
-    createdAt: Attribute.DateTime;
-    updatedAt: Attribute.DateTime;
-    createdBy: Attribute.Relation<
-      'api::customer-level.customer-level',
-      'oneToOne',
-      'admin::user'
-    > &
-      Attribute.Private;
-    updatedBy: Attribute.Relation<
-      'api::customer-level.customer-level',
-      'oneToOne',
-      'admin::user'
-    > &
-      Attribute.Private;
-  };
-}
-
-export interface ApiLoadLoad extends Schema.CollectionType {
-  collectionName: 'loads';
-  info: {
-    singularName: 'load';
-    pluralName: 'loads';
-    displayName: 'Load';
-    description: '';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    uuid: Attribute.String;
-    customer: Attribute.Relation<
-      'api::load.load',
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
-    product: Attribute.String;
-    quantity: Attribute.Decimal;
-    price: Attribute.Decimal;
-    total: Attribute.Decimal;
-    discount: Attribute.Decimal;
-    createdAt: Attribute.DateTime;
-    updatedAt: Attribute.DateTime;
-    createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
-      Attribute.Private;
-    updatedBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
-      Attribute.Private;
-  };
-}
-
 export interface PluginUploadFile extends Schema.CollectionType {
   collectionName: 'files';
   info: {
@@ -879,6 +785,131 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
   };
 }
 
+export interface ApiBannerBanner extends Schema.CollectionType {
+  collectionName: 'banners';
+  info: {
+    singularName: 'banner';
+    pluralName: 'banners';
+    displayName: 'Banner';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    image: Attribute.Media;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::banner.banner',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::banner.banner',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiBombBomb extends Schema.CollectionType {
+  collectionName: 'bombs';
+  info: {
+    singularName: 'bomb';
+    pluralName: 'bombs';
+    displayName: 'Bomb';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    dispatcher: Attribute.Relation<
+      'api::bomb.bomb',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    bomb: Attribute.Integer;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+  };
+}
+
+export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
+  collectionName: 'customer_levels';
+  info: {
+    singularName: 'customer-level';
+    pluralName: 'customer-levels';
+    displayName: 'Customer Level';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    name: Attribute.String;
+    min: Attribute.Decimal;
+    max: Attribute.Decimal;
+    discount: Attribute.Decimal;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::customer-level.customer-level',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::customer-level.customer-level',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiLoadLoad extends Schema.CollectionType {
+  collectionName: 'loads';
+  info: {
+    singularName: 'load';
+    pluralName: 'loads';
+    displayName: 'Load';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    customer: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    product: Attribute.String;
+    quantity: Attribute.Float;
+    price: Attribute.Float;
+    total: Attribute.Float;
+    discount: Attribute.Float;
+    date: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface ContentTypes {
@@ -889,9 +920,6 @@ declare module '@strapi/types' {
       'admin::api-token-permission': AdminApiTokenPermission;
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
-      'api::bomb.bomb': ApiBombBomb;
-      'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
-      'api::load.load': ApiLoadLoad;
       'plugin::upload.file': PluginUploadFile;
       'plugin::upload.folder': PluginUploadFolder;
       'plugin::content-releases.release': PluginContentReleasesRelease;
@@ -900,6 +928,10 @@ declare module '@strapi/types' {
       'plugin::users-permissions.permission': PluginUsersPermissionsPermission;
       'plugin::users-permissions.role': PluginUsersPermissionsRole;
       'plugin::users-permissions.user': PluginUsersPermissionsUser;
+      'api::banner.banner': ApiBannerBanner;
+      'api::bomb.bomb': ApiBombBomb;
+      'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
+      'api::load.load': ApiLoadLoad;
     }
   }
 }

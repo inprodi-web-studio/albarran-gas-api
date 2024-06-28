@@ -25,16 +25,19 @@
       "type": "string"
     },
     "quantity": {
-      "type": "decimal"
+      "type": "float"
     },
     "price": {
-      "type": "decimal"
+      "type": "float"
     },
     "total": {
-      "type": "decimal"
+      "type": "float"
     },
     "discount": {
-      "type": "decimal"
+      "type": "float"
+    },
+    "date": {
+      "type": "string"
     }
   }
 }

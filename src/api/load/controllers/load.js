@@ -4,12 +4,13 @@ const { LOAD } = require("../../../constants/models");
 
 const dbConfig = require("../../../../config/customDatabase");
 const { validateAssignLoad } = require("../validation");
+const { findMany } = require("../../../helpers");
 const knex = require("knex")(dbConfig);
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
 const loadFields = {
-    fields : ["uuid", "product", "price", "quantity", "total", "discount"],
+    fields : ["uuid", "product", "price", "quantity", "total", "discount", "date"],
     populate : {
         customer : {
             fields : ["uuid", "name", "lastName"],
@@ -18,6 +19,20 @@ const loadFields = {
 };
 
 module.exports = createCoreController( LOAD, ({ strapi }) => ({
+    async getLoads_Customer(ctx) {
+        const { id } = ctx.state.user;
+
+        const loads = await findMany( LOAD, loadFields, {
+            customer : id,
+        });
+
+        const stats = await strapi.service( LOAD ).getStats( id );
+
+        loads.stats = stats;
+
+        return loads;
+    },
+
     async getLoads(ctx) {
         const { bombId } = ctx.params;
         const { last }   = ctx.query;
@@ -38,6 +53,21 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
                     .where("nrobom", bombId)
                     .orderBy("lognew", "desc")
                     .first();
+
+                if ( lastLoad ) {
+                    const conflictLoad = await strapi.query(LOAD).findOne({
+                        where : {
+                            quantity : lastLoad?.can,
+                            price : lastLoad?.pre,
+                            total : lastLoad?.mto,
+                            date : lastLoad?.datetime_combined.toISOString(),
+                        },
+                    });
+
+                    if ( conflictLoad ) {
+                        return null;
+                    }
+                }
 
                 return lastLoad;
             }
