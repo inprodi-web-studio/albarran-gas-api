@@ -1,7 +1,7 @@
-const { USER } = require("../../../constants/models");
-const { findOneByUuid } = require("../../../helpers");
-const { BadRequestError, NotFoundError } = require("../../../helpers/errors");
-const { validateUpdateProfile } = require("../validation");
+const { USER, FISCAL } = require("../../../constants/models");
+const { findOneByUuid, findMany } = require("../../../helpers");
+const { NotFoundError, ConflictError } = require("../../../helpers/errors");
+const { validateUpdateProfile, validateAddFiscal } = require("../validation");
 
 module.exports = (plugin) => {
     plugin.controllers.user["updateProfile_Customer"] = async ( ctx ) => {
@@ -40,5 +40,60 @@ module.exports = (plugin) => {
         }
 
         return user;
+    };
+
+    plugin.controllers.user["findFiscals_Customer"] = async ( ctx ) => {
+        const customer = ctx.state.user;
+
+        const fiscals = await findMany( FISCAL, {
+            fields : ["uuid", "legalName", "rfc", "cp", "regime"],
+        }, {
+            user : customer.id,
+        });
+
+        return fiscals;
+    };
+
+    plugin.controllers.user["addFiscal_Customer"] = async ( ctx ) => {
+        const data = ctx.request.body;
+        const customer = ctx.state.user;
+
+        await validateAddFiscal(data);
+
+        const conflictingFiscal = await strapi.query(FISCAL).count({
+            where : {
+                user : customer.id,
+                rfc      : data.rfc,
+            },
+        });
+
+        if ( conflictingFiscal > 0 ) {
+            throw new ConflictError( "Fiscal already registered.", {
+                key : "fiscal.duplicatedFiscal",
+                path : ctx.request.path,
+            });
+        }
+
+        const newFiscal = await strapi.entityService.create( FISCAL, {
+            data : {
+                ...data,
+                user : customer.id
+            },
+            fields : ["uuid", "legalName", "rfc", "cp", "regime"],
+        });
+
+        return newFiscal;
+    };
+
+    plugin.controllers.user["deleteFiscal_Customer"] = async ( ctx ) => {
+        const { uuid } = ctx.params;
+
+        const fiscal = await findOneByUuid( uuid, FISCAL, {
+            fields : ["uuid", "legalName", "rfc", "cp", "regime"],
+        });
+
+        const deletedFiscal = await strapi.entityService.delete( FISCAL, fiscal.id );
+
+        return deletedFiscal;
     };
 }

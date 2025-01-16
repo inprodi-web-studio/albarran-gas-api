@@ -5,7 +5,7 @@ const { LOAD } = require("../../../constants/models");
 const dbConfig = require("../../../../config/customDatabase");
 const { validateAssignLoad } = require("../validation");
 const { findMany } = require("../../../helpers");
-const knex = require("knex")(dbConfig);
+const knex = require("knex")(dbConfig.bohemio);
 
 const { createCoreController } = require("@strapi/strapi").factories;
 

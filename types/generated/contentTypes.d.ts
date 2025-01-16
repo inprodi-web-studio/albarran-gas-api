@@ -768,6 +768,12 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'oneToMany',
       'api::load.load'
     >;
+    branch: Attribute.String;
+    fiscals: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::fiscal.fiscal'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -834,6 +840,7 @@ export interface ApiBombBomb extends Schema.CollectionType {
       'plugin::users-permissions.user'
     >;
     bomb: Attribute.Integer;
+    branch: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<'api::bomb.bomb', 'oneToOne', 'admin::user'> &
@@ -870,6 +877,45 @@ export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
       Attribute.Private;
     updatedBy: Attribute.Relation<
       'api::customer-level.customer-level',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiFiscalFiscal extends Schema.CollectionType {
+  collectionName: 'fiscals';
+  info: {
+    singularName: 'fiscal';
+    pluralName: 'fiscals';
+    displayName: 'Fiscal';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    legalName: Attribute.String;
+    rfc: Attribute.String;
+    cp: Attribute.String;
+    user: Attribute.Relation<
+      'api::fiscal.fiscal',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    regime: Attribute.String;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::fiscal.fiscal',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::fiscal.fiscal',
       'oneToOne',
       'admin::user'
     > &
@@ -931,6 +977,7 @@ declare module '@strapi/types' {
       'api::banner.banner': ApiBannerBanner;
       'api::bomb.bomb': ApiBombBomb;
       'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
+      'api::fiscal.fiscal': ApiFiscalFiscal;
       'api::load.load': ApiLoadLoad;
     }
   }

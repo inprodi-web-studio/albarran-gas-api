@@ -4,5 +4,6 @@ module.exports = {
     LOAD           : "api::load.load",
     BOMB           : "api::bomb.bomb",
     BANNER         : "api::banner.banner",
+    FISCAL         : "api::fiscal.fiscal",
     CUSTOMER_LEVEL : "api::customer-level.customer-level",
 }

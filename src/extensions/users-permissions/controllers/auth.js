@@ -5,6 +5,7 @@ const {
     validateForgotPassword,
     validateResetPassword,
     validateSetBombs,
+    validateDispatcherLogin,
 } = require("../validation");
 
 const {
@@ -206,11 +207,12 @@ module.exports = (plugin) => {
     plugin.controllers.auth["login_Dispatcher"] = async (ctx) => {
         const data = ctx.request.body;
 
-        await validateLogin(data);
+        await validateDispatcherLogin(data);
         
         const {
             email,
             password,
+            branch,
         } = data;
 
         const dispatcher = await findOneByAny(email, USER, "email");
@@ -228,18 +230,26 @@ module.exports = (plugin) => {
             id : dispatcher.id,
         });
 
+        await strapi.entityService.update( USER, dispatcher.id, {
+            data : {
+                branch : branch,
+            },
+        });
+
         return {
             token     : TOKEN,
             uuid      : dispatcher.uuid,
             name      : dispatcher.name,
             lastName  : dispatcher.lastName,
             email     : dispatcher.email,
+            branch    : branch,
         };
     };
 
     plugin.controllers.auth["setBombs_Dispatcher"] = async (ctx) => {
         const data = ctx.request.body;
         const dispatcher = ctx.state.user;
+        const { branch } = dispatcher;
     
         await validateSetBombs(data);
     
@@ -253,6 +263,7 @@ module.exports = (plugin) => {
             const conflictSession = await strapi.query(BOMB).findOne({
                 where: {
                     bomb: bomb,
+                    branch: branch
                 },
             });
     
@@ -275,7 +286,8 @@ module.exports = (plugin) => {
             strapi.entityService.create( BOMB, {
                 data: {
                     bomb       : bomb,
-                    dispatcher : dispatcher.id
+                    dispatcher : dispatcher.id,
+                    branch     : branch,
                 },
             })
         );

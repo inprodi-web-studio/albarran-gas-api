@@ -106,6 +106,15 @@
       "relation": "oneToMany",
       "target": "api::load.load",
       "mappedBy": "customer"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "fiscals": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::fiscal.fiscal",
+      "mappedBy": "user"
     }
   }
 }

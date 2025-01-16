@@ -37,16 +37,31 @@ const updateProfileSchema = yup.object().shape({
     birthdate       : yup.string().required("Birthdate is required").matches( /^\d{4}-\d{2}-\d{2}$/, "Birthdate must be a valid date" ),
 });
 
+const dispatcherLoginSchema = yup.object().shape({
+    email    : yup.string().email("Email must be a valid email").required("Email is required"),
+    password : yup.string().required("Password is required"),
+    branch : yup.string().oneOf(["alamo", "arenal", "navarrol", "lopez", "bohemio"]).required(),
+}).noUnknown().strict();
+
 const setBombs = yup.object().shape({
     bombs : yup.array().of( yup.number() ).min(1).required("Bombs is required"),
-});
+}).noUnknown().strict();
+
+const addFiscal = yup.object().shape({
+    legalName : yup.string().required("Legal name is required"),
+    rfc : yup.string().required("RFC is required"),
+    cp : yup.string().required("CP is required"),
+    regime : yup.string().required("Regime is required"),
+}).noUnknown().strict();
 
 module.exports = {
-    validateLogin          : validateYupSchema( loginSchema ),
-    validateRegister       : validateYupSchema( registerSchema ),
-    validateValidateCode   : validateYupSchema( validateCodeSchema ),
-    validateForgotPassword : validateYupSchema( forgotPasswordSchema ),
-    validateResetPassword  : validateYupSchema( resetPasswordSchema ),
-    validateUpdateProfile  : validateYupSchema( updateProfileSchema ),
-    validateSetBombs       : validateYupSchema( setBombs ),
+    validateLogin           : validateYupSchema( loginSchema ),
+    validateRegister        : validateYupSchema( registerSchema ),
+    validateValidateCode    : validateYupSchema( validateCodeSchema ),
+    validateForgotPassword  : validateYupSchema( forgotPasswordSchema ),
+    validateResetPassword   : validateYupSchema( resetPasswordSchema ),
+    validateUpdateProfile   : validateYupSchema( updateProfileSchema ),
+    validateDispatcherLogin : validateYupSchema( dispatcherLoginSchema ),
+    validateSetBombs        : validateYupSchema( setBombs ),
+    validateAddFiscal       : validateYupSchema( addFiscal ),
 };

@@ -1,10 +1,10 @@
 {
   "kind": "collectionType",
-  "collectionName": "bombs",
+  "collectionName": "fiscals",
   "info": {
-    "singularName": "bomb",
-    "pluralName": "bombs",
-    "displayName": "Bomb",
+    "singularName": "fiscal",
+    "pluralName": "fiscals",
+    "displayName": "Fiscal",
     "description": ""
   },
   "options": {
@@ -15,16 +15,22 @@
     "uuid": {
       "type": "string"
     },
-    "dispatcher": {
+    "legalName": {
+      "type": "string"
+    },
+    "rfc": {
+      "type": "string"
+    },
+    "cp": {
+      "type": "string"
+    },
+    "user": {
       "type": "relation",
       "relation": "manyToOne",
       "target": "plugin::users-permissions.user",
-      "inversedBy": "bombsInUse"
+      "inversedBy": "fiscals"
     },
-    "bomb": {
-      "type": "integer"
-    },
-    "branch": {
+    "regime": {
       "type": "string"
     }
   }
