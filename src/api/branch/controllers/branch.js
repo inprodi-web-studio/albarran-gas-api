@@ -3,12 +3,32 @@ const knex = require("knex");
 
 const dbDictionary = {
     bohemio : knex(dbConfig.bohemio),
+    navarrol : knex(dbConfig.navarrol),
+    lopez : knex(dbConfig.lopez),
+    arenal : knex(dbConfig.arenal),
+    alamo : knex(dbConfig.alamo),
 };
 
 const branchDictionary = {
     bohemio : {
         address : "Calzada Independencia Nte. 2236, Colonia Monumental, 44320 Guadalajara, Jal.",
         phone : "3336097490",
+    },
+    navarrol : {
+        address : "Calz. Independencia Norte 357, Col. El Retiro, 44280 Guadalajara, Jal.",
+        phone : "3324642871",
+    },
+    lopez : {
+        address : "Av. López Mateos 760, Ladrón de Guevara, 44650 Guadalajara, Jal.",
+        phone : "3336158800",
+    },
+    arenal : {
+        address : "Av. Lázaro Cárdenas 455, El Arenal, 45350 Guadalajara, Jal.",
+        phone : "3747408375",
+    },
+    alamo : {
+        address : "Av. R. Michel 3029, Colonia Álamo, 45590 Taquepaque, Jal.",
+        phone : "3333433353",
     },
 };
 

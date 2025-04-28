@@ -40,7 +40,7 @@ const updateProfileSchema = yup.object().shape({
 const dispatcherLoginSchema = yup.object().shape({
     email    : yup.string().email("Email must be a valid email").required("Email is required"),
     password : yup.string().required("Password is required"),
-    branch : yup.string().oneOf(["alamo", "arenal", "navarrol", "lopez", "bohemio"]).required(),
+    branch : yup.string().oneOf(["bohemio", "navarrol", "lopez", "arenal", "alamo" ]).required(),
 }).noUnknown().strict();
 
 const setBombs = yup.object().shape({
