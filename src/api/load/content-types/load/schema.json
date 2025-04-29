@@ -38,6 +38,11 @@
     },
     "date": {
       "type": "string"
+    },
+    "fiscal": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::fiscal.fiscal"
     }
   }
 }

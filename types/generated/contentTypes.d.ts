@@ -947,6 +947,11 @@ export interface ApiLoadLoad extends Schema.CollectionType {
     total: Attribute.Float;
     discount: Attribute.Float;
     date: Attribute.String;
+    fiscal: Attribute.Relation<
+      'api::load.load',
+      'oneToOne',
+      'api::fiscal.fiscal'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &

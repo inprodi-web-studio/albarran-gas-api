@@ -50,6 +50,13 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         };
     },
 
+    async parseCustomer(data) {
+        const split = data.customer.split("-");
+
+        data.customer = split[0];
+        data.fiscal = split[1] === "none" ? null : split[1];
+    },
+
     async assignDiscount(data) {
         const customer = await findOneByUuid( data.customer, USER );
 
