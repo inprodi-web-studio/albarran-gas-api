@@ -1,13 +1,7 @@
+const dbDictionary = require("../../../constants/dbDictionary");
 const { BOMB } = require("../../../constants/models");
 
 const { createCoreController } = require("@strapi/strapi").factories;
-
-const dbConfig = require("../../../../config/customDatabase");
-const knex = require("knex");
-
-const dbDictionary = {
-    bohemio : knex(dbConfig.bohemio),
-};
 
 module.exports = createCoreController( BOMB, ({ strapi }) => ({
     async find(ctx) {
