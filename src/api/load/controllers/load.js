@@ -104,6 +104,8 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
 
         await strapi.service(LOAD).assignDiscount(data);
 
+        console.log( data );
+
         const newLoad = await strapi.entityService.create( LOAD, {
             data,
             ...loadFields,
