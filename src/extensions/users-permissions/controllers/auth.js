@@ -298,5 +298,20 @@ module.exports = (plugin) => {
             status : "success",
             message : bombs.length + " bombs assigned",
         };
-    };    
+    };
+
+    plugin.controllers.auth["logout_Dispatcher"] = async (ctx) => {
+        const dispatcher = ctx.state.user;
+
+        await strapi.entityService.update( USER, dispatcher.id, {
+            data : {
+                branch : null,
+                bombsInUse : [],
+            },
+        });
+
+        return {
+            message : "success",
+        };
+    };
 };

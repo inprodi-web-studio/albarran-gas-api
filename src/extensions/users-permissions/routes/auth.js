@@ -54,6 +54,15 @@ module.exports = ( plugin ) => {
     });
 
     plugin.routes["content-api"].routes.push({
+        method  : "POST",
+        path    : "/dispatcher/auth/logout",
+        handler : "auth.logout_Dispatcher",
+        config  : {
+            prefix : "",
+        },
+    });
+
+    plugin.routes["content-api"].routes.push({
         method  : "PATCH",
         path    : "/dispatcher/auth/set-bombs",
         handler : "auth.setBombs_Dispatcher",
