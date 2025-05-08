@@ -303,10 +303,19 @@ module.exports = (plugin) => {
     plugin.controllers.auth["logout_Dispatcher"] = async (ctx) => {
         const dispatcher = ctx.state.user;
 
+        const bombs = await strapi.query(BOMB).findMany({
+            where : {
+                dispatcher : dispatcher.id,
+            },
+        });
+
+        for (let i = 0; i < bombs.length; i++) {
+            await strapi.entityService.delete( BOMB, bombs[i].id );
+        }
+
         await strapi.entityService.update( USER, dispatcher.id, {
             data : {
                 branch : null,
-                bombsInUse : [],
             },
         });
 
