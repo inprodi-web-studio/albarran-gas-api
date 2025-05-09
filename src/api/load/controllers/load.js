@@ -86,8 +86,9 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
                 // TODO: Definir el número de bomba y posición en el despacho
                 .where("nrobom", bombId)
                 .orderBy("lognew", "desc")
-                .limit(30);
-
+                .limit(30)
+                .timeout(30000);
+                
             return loads;
 
         } catch (error) {
