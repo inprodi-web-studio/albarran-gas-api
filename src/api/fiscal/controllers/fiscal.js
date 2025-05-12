@@ -8,7 +8,7 @@ module.exports = createCoreController(FISCAL, ({ strapi }) => ({
     async findMany(ctx) {
         const user = ctx.state.user;
 
-        const fiscals = await findMany(FISCAL, {
+        const fiscals = await findMany( FISCAL, {
             fields: ["uuid", "rfc", "legalName", "cp", "regime"],
         }, {
             user: user.id,
@@ -21,8 +21,6 @@ module.exports = createCoreController(FISCAL, ({ strapi }) => ({
         const data = ctx.request.body;
 
         const { user } = ctx.state;
-
-        console.log(user);
 
         const existing = await strapi.entityService.findMany(FISCAL, {
             filters: {
@@ -52,7 +50,11 @@ module.exports = createCoreController(FISCAL, ({ strapi }) => ({
     async delete(ctx) {
         const { uuid } = ctx.params;
 
-        const fiscal = await findOneByUuid(FISCAL, uuid);
+        const fiscal = await strapi.query(FISCAL).findOne({
+            where: {
+                uuid,
+            },
+        });
 
         const deletedFiscal = await strapi.entityService.delete(FISCAL, fiscal.id);
 
