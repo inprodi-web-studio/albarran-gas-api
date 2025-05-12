@@ -4,12 +4,12 @@ const { BadRequestError } = require("../../../helpers/errors");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
-module.exports = createCoreController(FISCAL, ({strapi}) => ({
+module.exports = createCoreController(FISCAL, ({ strapi }) => ({
     async findMany(ctx) {
         const user = ctx.state.user;
 
-        const fiscals = await findMany( FISCAL, {
-            fields : ["uuid", "rfc", "legalName", "cp", "regime"],
+        const fiscals = await findMany(FISCAL, {
+            fields: ["uuid", "rfc", "legalName", "cp", "regime"],
         }, {
             user: user.id,
         });
@@ -39,7 +39,12 @@ module.exports = createCoreController(FISCAL, ({strapi}) => ({
             });
         }
 
-        const fiscal = await strapi.entityService.create(FISCAL, { data, user: user.id });
+        const fiscal = await strapi.entityService.create( FISCAL, {
+            data : {
+                ...data,
+                user: user.id,
+            },
+        });
 
         return fiscal;
     },
