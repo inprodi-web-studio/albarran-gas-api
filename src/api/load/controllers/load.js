@@ -37,8 +37,6 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
         const { bombId } = ctx.params;
         const { last } = ctx.query;
 
-        console.log( {last} );
-
         try {
             if (last) {
                 const lastLoad = await knex("Despachos")
