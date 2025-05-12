@@ -37,6 +37,8 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
         const { bombId } = ctx.params;
         const { last } = ctx.query;
 
+        console.log( {last} );
+
         try {
             if (last) {
                 const lastLoad = await knex("Despachos")
@@ -52,7 +54,8 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
                     )
                     .where("nrobom", bombId)
                     .orderBy("lognew", "desc")
-                    .first();
+                    .first()
+                    .timeout(60000);
 
                 if (lastLoad) {
                     const conflictLoad = await strapi.query(LOAD).findOne({
@@ -71,7 +74,7 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
 
                 return lastLoad;
             }
-            console.time("loadQuery");
+
             const loads = await knex("Despachos")
                 .select(
                     "can",
@@ -88,7 +91,6 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
                 .orderBy("lognew", "desc")
                 .limit(30)
                 .timeout(60000);
-            console.timeEnd("loadQuery");
 
             return loads;
 
