@@ -24,7 +24,7 @@ module.exports = createCoreController(FISCAL, ({strapi}) => ({
             });
         }
 
-        const fiscal = await strapi.entityService.create(FISCAL, { data });
+        const fiscal = await strapi.entityService.create(FISCAL, { data, user: user.id });
 
         return fiscal;
     },

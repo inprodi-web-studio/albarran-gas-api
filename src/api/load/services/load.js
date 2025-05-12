@@ -1,4 +1,4 @@
-const { LOAD, USER, CUSTOMER_LEVEL } = require("../../../constants/models");
+const { LOAD, USER, CUSTOMER_LEVEL, FISCAL } = require("../../../constants/models");
 const { findOneByUuid } = require("../../../helpers");
 
 const { createCoreService } = require("@strapi/strapi").factories;
@@ -54,7 +54,25 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         const split = data.customer.split("|");
 
         data.customer = split[0];
-        data.fiscal = split[1] === "none" ? null : split[1];
+
+        if ( split[0] === "none" ) {
+            data.fiscal = null;
+        } else {
+            const legalName = split[1];
+
+            const fiscal = await strapi.query(FISCAL).findOne({
+                where : {
+                    legalName,
+                    user : {
+                        uuid : split[0],
+                    }
+                },
+            });
+
+            data.fiscal = fiscal.id;
+        }
+
+
     },
 
     async assignDiscount(data) {
