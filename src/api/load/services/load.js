@@ -60,11 +60,11 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         if ( split[1] === "none" ) {
             data.fiscal = null;
         } else {
-            const legalName = split[1];
+            const rfc = split[1];
 
             const fiscal = await strapi.query(FISCAL).findOne({
                 where : {
-                    legalName,
+                    rfc,
                     user : {
                         uuid : split[0],
                     }
