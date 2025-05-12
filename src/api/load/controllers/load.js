@@ -71,7 +71,7 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
 
                 return lastLoad;
             }
-
+            console.time("loadQuery");
             const loads = await knex("Despachos")
                 .select(
                     "can",
@@ -87,7 +87,8 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
                 .where("nrobom", bombId)
                 .orderBy("lognew", "desc")
                 .limit(30)
-                .timeout(30000);
+                .timeout(60000);
+            console.timeEnd("loadQuery");
                 
             return loads;
 
