@@ -55,6 +55,8 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         data.customer = split[0];
 
+        console.log(split[0]);
+
         if ( split[0] === "none" ) {
             data.fiscal = null;
         } else {
