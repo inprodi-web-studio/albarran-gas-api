@@ -10,23 +10,23 @@ const knex = require("knex")(dbConfig.bohemio);
 const { createCoreController } = require("@strapi/strapi").factories;
 
 const loadFields = {
-    fields : ["uuid", "product", "price", "quantity", "total", "discount", "date"],
-    populate : {
-        customer : {
-            fields : ["uuid", "name", "lastName"],
+    fields: ["uuid", "product", "price", "quantity", "total", "discount", "date", "branch"],
+    populate: {
+        customer: {
+            fields: ["uuid", "name", "lastName"],
         },
     },
 };
 
-module.exports = createCoreController( LOAD, ({ strapi }) => ({
+module.exports = createCoreController(LOAD, ({ strapi }) => ({
     async getLoads_Customer(ctx) {
         const { id } = ctx.state.user;
 
-        const loads = await findMany( LOAD, loadFields, {
-            customer : id,
+        const loads = await findMany(LOAD, loadFields, {
+            customer: id,
         });
 
-        const stats = await strapi.service( LOAD ).getStats( id );
+        const stats = await strapi.service(LOAD).getStats(id);
 
         loads.stats = stats;
 
@@ -35,10 +35,10 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
 
     async getLoads(ctx) {
         const { bombId } = ctx.params;
-        const { last }   = ctx.query;
-        
+        const { last } = ctx.query;
+
         try {
-            if ( last ) {
+            if (last) {
                 const lastLoad = await knex("Despachos")
                     .select(
                         "can",
@@ -54,17 +54,17 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
                     .orderBy("lognew", "desc")
                     .first();
 
-                if ( lastLoad ) {
+                if (lastLoad) {
                     const conflictLoad = await strapi.query(LOAD).findOne({
-                        where : {
-                            quantity : lastLoad?.can,
-                            price : lastLoad?.pre,
-                            total : lastLoad?.mto,
-                            date : lastLoad?.datetime_combined.toISOString(),
+                        where: {
+                            quantity: lastLoad?.can,
+                            price: lastLoad?.pre,
+                            total: lastLoad?.mto,
+                            date: lastLoad?.datetime_combined.toISOString(),
                         },
                     });
 
-                    if ( conflictLoad ) {
+                    if (conflictLoad) {
                         return null;
                     }
                 }
@@ -89,7 +89,7 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
                 .limit(30)
                 .timeout(60000);
             console.timeEnd("loadQuery");
-                
+
             return loads;
 
         } catch (error) {
@@ -99,6 +99,7 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
 
     async assignLoad(ctx) {
         const data = ctx.request.body;
+        const user = ctx.state.user;
 
         await validateAssignLoad(data);
 
@@ -106,10 +107,13 @@ module.exports = createCoreController( LOAD, ({ strapi }) => ({
 
         await strapi.service(LOAD).assignDiscount(data);
 
-        console.log( data );
+        console.log(data);
 
-        const newLoad = await strapi.entityService.create( LOAD, {
-            data,
+        const newLoad = await strapi.entityService.create(LOAD, {
+            data: {
+                ...data,
+                branch: user.branch,
+            },
             ...loadFields,
         });
 

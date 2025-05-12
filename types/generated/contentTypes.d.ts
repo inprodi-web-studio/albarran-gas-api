@@ -952,6 +952,7 @@ export interface ApiLoadLoad extends Schema.CollectionType {
       'oneToOne',
       'api::fiscal.fiscal'
     >;
+    branch: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
