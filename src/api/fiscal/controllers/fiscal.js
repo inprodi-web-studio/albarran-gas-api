@@ -5,7 +5,7 @@ const { BadRequestError } = require("../../../helpers/errors");
 const { createCoreController } = require("@strapi/strapi").factories;
 
 module.exports = createCoreController(FISCAL, ({ strapi }) => ({
-    async findMany(ctx) {
+    async find(ctx) {
         const user = ctx.state.user;
 
         const fiscals = await findMany( FISCAL, {
