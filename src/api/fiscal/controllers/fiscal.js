@@ -1,5 +1,5 @@
 const { FISCAL } = require("../../../constants/models");
-const { findMany } = require("../../../helpers");
+const { findMany, findOneByUuid } = require("../../../helpers");
 const { BadRequestError } = require("../../../helpers/errors");
 
 const { createCoreController } = require("@strapi/strapi").factories;
@@ -43,4 +43,14 @@ module.exports = createCoreController(FISCAL, ({strapi}) => ({
 
         return fiscal;
     },
+
+    async delete(ctx) {
+        const { uuid } = ctx.params;
+
+        const fiscal = await findOneByUuid(FISCAL, uuid);
+
+        const deletedFiscal = await strapi.entityService.delete(FISCAL, fiscal.id);
+
+        return deletedFiscal;
+    }
 }));
