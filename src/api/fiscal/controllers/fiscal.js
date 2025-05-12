@@ -1,9 +1,22 @@
 const { FISCAL } = require("../../../constants/models");
+const { findMany } = require("../../../helpers");
 const { BadRequestError } = require("../../../helpers/errors");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
 module.exports = createCoreController(FISCAL, ({strapi}) => ({
+    async findMany(ctx) {
+        const user = ctx.state.user;
+
+        const fiscals = await findMany( FISCAL, {
+            fields : ["uuid", "rfc", "legalName", "cp", "regime"],
+        }, {
+            user: user.id,
+        });
+
+        return fiscals;
+    },
+
     async create(ctx) {
         const data = ctx.request.body;
 
