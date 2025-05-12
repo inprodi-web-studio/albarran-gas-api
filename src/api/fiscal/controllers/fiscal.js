@@ -22,6 +22,8 @@ module.exports = createCoreController(FISCAL, ({strapi}) => ({
 
         const { user } = ctx.state;
 
+        console.log(user);
+
         const existing = await strapi.entityService.findMany(FISCAL, {
             filters: {
                 rfc: data.rfc,
