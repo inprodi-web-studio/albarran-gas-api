@@ -48,11 +48,11 @@ module.exports = createCoreController(FISCAL, ({ strapi }) => ({
     },
 
     async delete(ctx) {
-        const { uuid } = ctx.params;
+        const { id } = ctx.params;
 
         const fiscal = await strapi.query(FISCAL).findOne({
             where: {
-                uuid,
+                uuid : id,
             },
         });
 
