@@ -9,6 +9,7 @@ module.exports = {
       options: {
         port: parseInt(process.env.BOHEMIO_DATABASE_PORT),
         enableArithAbort: true,
+        requestTimeout: 60000,
       },
     },
     pool: {
@@ -26,6 +27,7 @@ module.exports = {
       options: {
         port: parseInt(process.env.NAVARROL_DATABASE_PORT),
         enableArithAbort: true,
+        requestTimeout: 60000,
       },
     },
     pool: {
@@ -43,6 +45,7 @@ module.exports = {
       options: {
         port: parseInt(process.env.LOPEZ_MATEOS_DATABASE_PORT),
         enableArithAbort: true,
+        requestTimeout: 60000,
       },
     },
     pool: {
@@ -60,6 +63,7 @@ module.exports = {
       options: {
         port: parseInt(process.env.ALAMO_DATABASE_PORT),
         enableArithAbort: true,
+        requestTimeout: 60000,
       },
     },
     pool: {
@@ -77,6 +81,7 @@ module.exports = {
       options: {
         port: parseInt(process.env.ARENAL_DATABASE_PORT),
         enableArithAbort: true,
+        requestTimeout: 60000,
       },
     },
     pool: {
