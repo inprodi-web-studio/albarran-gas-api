@@ -5,118 +5,144 @@ const { LOAD } = require("../../../constants/models");
 const dbConfig = require("../../../../config/customDatabase");
 const { validateAssignLoad } = require("../validation");
 const { findMany } = require("../../../helpers");
-const knex = require("knex")(dbConfig.bohemio);
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
 const loadFields = {
-    fields: ["uuid", "product", "price", "quantity", "total", "discount", "date", "branch"],
-    populate: {
-        customer: {
-            fields: ["uuid", "name", "lastName"],
-        },
+  fields: [
+    "uuid",
+    "product",
+    "price",
+    "quantity",
+    "total",
+    "discount",
+    "date",
+    "branch",
+  ],
+  populate: {
+    customer: {
+      fields: ["uuid", "name", "lastName"],
     },
+  },
 };
 
 module.exports = createCoreController(LOAD, ({ strapi }) => ({
-    async getLoads_Customer(ctx) {
-        const { id } = ctx.state.user;
+  async getLoads_Customer(ctx) {
+    const { id } = ctx.state.user;
 
-        const loads = await findMany(LOAD, loadFields, {
-            customer: id,
-        });
+    const loads = await findMany(LOAD, loadFields, {
+      customer: id,
+    });
 
-        const stats = await strapi.service(LOAD).getStats(id);
+    const stats = await strapi.service(LOAD).getStats(id);
 
-        loads.stats = stats;
+    loads.stats = stats;
 
-        return loads;
-    },
+    return loads;
+  },
 
-    async getLoads(ctx) {
-        const { bombId } = ctx.params;
-        const { last } = ctx.query;
+  async getLoads(ctx) {
+    const { bombId } = ctx.params;
+    const { last } = ctx.query;
+    const { branch } = ctx.state.user;
 
-        try {
-            if (last) {
-                const lastLoad = await knex("Despachos")
-                    .select(
-                        "can",
-                        "pre",
-                        "codprd",
-                        "mto",
-                        knex.raw("DATEADD(day, fchtrn - 2, '1900-01-01') AS converted_date"),
-                        knex.raw("RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS converted_time"),
-                        knex.raw("CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"),
-                        "lognew"
-                    )
-                    .where("nrobom", bombId)
-                    .orderBy("lognew", "desc")
-                    .first()
-                    .timeout(60000);
+    if (!dbConfig[branch]) {
+      ctx.throw(400, `No existe configuración para la sucursal: ${branch}`);
+      return;
+    }
 
-                if (lastLoad) {
-                    const conflictLoad = await strapi.query(LOAD).findOne({
-                        where: {
-                            quantity: lastLoad?.can,
-                            price: lastLoad?.pre,
-                            total: lastLoad?.mto,
-                            date: lastLoad?.datetime_combined.toISOString(),
-                        },
-                    });
+    const knex = require("knex")(dbConfig[branch]);
 
-                    if (conflictLoad) {
-                        return null;
-                    }
-                }
+    try {
+      if (last) {
+        const lastLoad = await knex("Despachos")
+          .select(
+            "can",
+            "pre",
+            "codprd",
+            "mto",
+            knex.raw(
+              "DATEADD(day, fchtrn - 2, '1900-01-01') AS converted_date"
+            ),
+            knex.raw(
+              "RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS converted_time"
+            ),
+            knex.raw(
+              "CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"
+            ),
+            "lognew"
+          )
+          .where("nrobom", bombId)
+          .orderBy("lognew", "desc")
+          .first()
+          .timeout(60000);
 
-                return lastLoad;
-            }
-
-            const loads = await knex("Despachos")
-                .select(
-                    "can",
-                    "pre",
-                    "codprd",
-                    "mto",
-                    knex.raw("DATEADD(day, fchtrn - 2, '1900-01-01') AS converted_date"),
-                    knex.raw("RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS converted_time"),
-                    knex.raw("CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"),
-                    "lognew"
-                )
-                // TODO: Definir el número de bomba y posición en el despacho
-                .where("nrobom", bombId)
-                .orderBy("lognew", "desc")
-                .limit(30)
-                .timeout(60000);
-
-            return loads;
-
-        } catch (error) {
-            ctx.throw(500, error);
-        }
-    },
-
-    async assignLoad(ctx) {
-        const data = ctx.request.body;
-        const user = ctx.state.user;
-
-        await validateAssignLoad(data);
-
-        await strapi.service(LOAD).parseCustomer(data);
-
-        await strapi.service(LOAD).assignDiscount(data);
-
-        console.log(data);
-
-        const newLoad = await strapi.entityService.create(LOAD, {
-            data: {
-                ...data,
-                branch: user.branch,
+        if (lastLoad) {
+          const conflictLoad = await strapi.query(LOAD).findOne({
+            where: {
+              quantity: lastLoad?.can,
+              price: lastLoad?.pre,
+              total: lastLoad?.mto,
+              date: lastLoad?.datetime_combined.toISOString(),
             },
-            ...loadFields,
-        });
+          });
 
-        return newLoad;
-    },
+          if (conflictLoad) {
+            return null;
+          }
+        }
+
+        return lastLoad;
+      }
+
+      const loads = await knex("Despachos")
+        .select(
+          "can",
+          "pre",
+          "codprd",
+          "mto",
+          knex.raw("DATEADD(day, fchtrn - 2, '1900-01-01') AS converted_date"),
+          knex.raw(
+            "RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS converted_time"
+          ),
+          knex.raw(
+            "CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"
+          ),
+          "lognew"
+        )
+        .where("nrobom", bombId)
+        .orderBy("lognew", "desc")
+        .limit(30)
+        .timeout(60000);
+
+      return loads;
+    } catch (error) {
+      ctx.throw(500, error);
+    } finally {
+      if (knex) {
+        await knex.destroy();
+      }
+    }
+  },
+
+  async assignLoad(ctx) {
+    const data = ctx.request.body;
+    const user = ctx.state.user;
+
+    await validateAssignLoad(data);
+
+    await strapi.service(LOAD).parseCustomer(data);
+
+    await strapi.service(LOAD).assignDiscount(data);
+
+    const newLoad = await strapi.entityService.create(LOAD, {
+      data: {
+        ...data,
+        branch: user.branch,
+      },
+      ...loadFields,
+    });
+
+    return newLoad;
+  },
 }));

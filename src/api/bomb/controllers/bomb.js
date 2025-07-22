@@ -3,37 +3,40 @@ const { BOMB } = require("../../../constants/models");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
-module.exports = createCoreController( BOMB, ({ strapi }) => ({
-    async find(ctx) {
-        const { user } = ctx.state;
-        const { branch } = user;
+module.exports = createCoreController(BOMB, ({ strapi }) => ({
+  async find(ctx) {
+    const { user } = ctx.state;
+    const { branch } = user;
 
-        const connect = dbDictionary[branch];
+    const connect = dbDictionary[branch];
 
-        try {
-            const bombs = await connect("Bombas")
-                .select(
-                    "nroman as bomb"
-                )
-                .where("nroman", ">", 0)
-                .orderBy("nro");
+    try {
+      const bombs = await connect("Bombas")
+        .select("nroman as bomb")
+        .where("nroman", ">", 0)
+        .orderBy("nro");
 
-            const currentBombs = await strapi.query(BOMB).findMany();
+      const currentBombs = await strapi.query(BOMB).findMany();
 
-            let availableBombs = [];
+      let availableBombs = [];
 
-            for ( const bomb of bombs ) {
-                const conflictBomb = currentBombs.filter( ( item ) => item.dispensary === bomb.dispensary && item.bomb === bomb.bomb && item.branch === branch );
+      for (const bomb of bombs) {
+        const conflictBomb = currentBombs.filter(
+          (item) =>
+            item.dispensary === bomb.dispensary &&
+            item.bomb === bomb.bomb &&
+            item.branch === branch
+        );
 
-                availableBombs.push({
-                    ...bomb,
-                    available : conflictBomb.length === 0,
-                });
-            }
+        availableBombs.push({
+          ...bomb,
+          available: conflictBomb.length === 0,
+        });
+      }
 
-            return availableBombs;
-        } catch (error) {
-            ctx.throw(500, error);
-        }
-    },
+      return availableBombs;
+    } catch (error) {
+      ctx.throw(500, error);
+    }
+  },
 }));
