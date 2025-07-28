@@ -12,8 +12,8 @@ module.exports = createCoreController(BOMB, ({ strapi }) => ({
 
     try {
       const bombs = await connect("Bombas")
-        .select("nroman as bomb")
-        .where("nroman", ">", 0)
+        .distinct("nro as bomb")
+        .where("nro", ">", 0)
         .orderBy("nro");
 
       const currentBombs = await strapi.query(BOMB).findMany();
