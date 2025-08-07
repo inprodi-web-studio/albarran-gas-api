@@ -3,6 +3,8 @@ const { findOneByUuid } = require("../../../helpers");
 
 const { createCoreService } = require("@strapi/strapi").factories;
 
+const FIRST_LOAD_DISCOUNT = 1;
+
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
         const totalLoads = await strapi.db.connection("loads")
@@ -55,8 +57,6 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         data.customer = split[0];
 
-        console.log(split[1]);
-
         if ( split[1] === "none" ) {
             data.fiscal = null;
         } else {
@@ -89,7 +89,7 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
             .first();
 
         if ( !totalLoads?.total ) {
-            data.discount = 0;
+            data.discount = FIRST_LOAD_DISCOUNT;
         } else {
             const { discount } = await strapi.query(CUSTOMER_LEVEL).findOne({
                 where : {

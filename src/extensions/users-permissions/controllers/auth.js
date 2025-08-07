@@ -32,7 +32,13 @@ module.exports = (plugin) => {
             password,
         } = data;
 
-        const customer = await findOneByAny(email, USER, "email");
+        const customer = await findOneByAny(email, USER, "email", {
+            populate : {
+                loads : {
+                    count : true,
+                }
+            }
+        });
 
         if ( customer.type !== "customer" ) {
             throw new NotFoundError( "Customer not found", {
