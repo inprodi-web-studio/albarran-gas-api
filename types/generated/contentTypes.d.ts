@@ -797,6 +797,7 @@ export interface ApiBannerBanner extends Schema.CollectionType {
     singularName: 'banner';
     pluralName: 'banners';
     displayName: 'Banner';
+    description: '';
   };
   options: {
     draftAndPublish: false;
@@ -826,7 +827,7 @@ export interface ApiBombBomb extends Schema.CollectionType {
   info: {
     singularName: 'bomb';
     pluralName: 'bombs';
-    displayName: 'Bomb';
+    displayName: 'Bombas';
     description: '';
   };
   options: {
@@ -855,7 +856,7 @@ export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
   info: {
     singularName: 'customer-level';
     pluralName: 'customer-levels';
-    displayName: 'Customer Level';
+    displayName: 'Niveles';
     description: '';
   };
   options: {
@@ -889,7 +890,7 @@ export interface ApiFiscalFiscal extends Schema.CollectionType {
   info: {
     singularName: 'fiscal';
     pluralName: 'fiscals';
-    displayName: 'Fiscal';
+    displayName: 'Razones Sociales';
     description: '';
   };
   options: {
@@ -928,7 +929,7 @@ export interface ApiLoadLoad extends Schema.CollectionType {
   info: {
     singularName: 'load';
     pluralName: 'loads';
-    displayName: 'Load';
+    displayName: 'Despachos';
     description: '';
   };
   options: {
