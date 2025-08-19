@@ -23,6 +23,7 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "5.3.4",
+    "strapi-plugin-excel-export-2024": "^1.0.7",
     "styled-components": "5.3.3",
     "tedious": "^18.2.0",
     "uuidv4": "^6.2.13"
@@ -34,7 +35,7 @@
     "uuid": "0e1141bd-2f68-4b24-a560-902be1fa865a"
   },
   "engines": {
-    "node": ">=14.19.1 <=18.x.x",
+    "node": "20.19.x",
     "yarn": "^1.22.0"
   },
   "license": "MIT"
