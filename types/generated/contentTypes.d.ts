@@ -774,6 +774,11 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'oneToMany',
       'api::fiscal.fiscal'
     >;
+    vehicles: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::vehicle.vehicle'
+    >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
@@ -963,6 +968,49 @@ export interface ApiLoadLoad extends Schema.CollectionType {
   };
 }
 
+export interface ApiVehicleVehicle extends Schema.CollectionType {
+  collectionName: 'vehicles';
+  info: {
+    singularName: 'vehicle';
+    pluralName: 'vehicles';
+    displayName: 'Vehiculos';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    brand: Attribute.String & Attribute.Required;
+    model: Attribute.String & Attribute.Required;
+    color: Attribute.String & Attribute.Required;
+    plates: Attribute.String & Attribute.Required;
+    insurancePolicy: Attribute.String;
+    insuranceExpiration: Attribute.Date;
+    insuranceCompany: Attribute.String;
+    insuranceCoverPhoto: Attribute.Media;
+    user: Attribute.Relation<
+      'api::vehicle.vehicle',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::vehicle.vehicle',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::vehicle.vehicle',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 declare module '@strapi/types' {
   export module Shared {
     export interface ContentTypes {
@@ -986,6 +1034,7 @@ declare module '@strapi/types' {
       'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
       'api::fiscal.fiscal': ApiFiscalFiscal;
       'api::load.load': ApiLoadLoad;
+      'api::vehicle.vehicle': ApiVehicleVehicle;
     }
   }
 }

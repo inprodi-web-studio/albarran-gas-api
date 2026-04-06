@@ -1,4 +1,4 @@
-const { USER, BOMB, LOAD, BANNER } = require("../constants/models");
+const { USER, BOMB, LOAD, BANNER, VEHICLE } = require("../constants/models");
 
 const roles = {
     public : {
@@ -20,6 +20,7 @@ const roles = {
             },
             [LOAD] : ["getLoads_Customer"],
             [BANNER] : ["findMany_Customer"],
+            [VEHICLE] : ["find", "create", "delete"],
         },
         meta : {
             type        : "customer",

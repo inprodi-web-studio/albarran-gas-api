@@ -2,7 +2,7 @@
 
 const { uuid } = require("uuidv4");
 
-const { USER, BOMB, LOAD, CUSTOMER_LEVEL, BANNER, FISCAL } = require("./constants/models");
+const { USER, BOMB, LOAD, CUSTOMER_LEVEL, BANNER, FISCAL, VEHICLE } = require("./constants/models");
 
 module.exports = {
   register(/*{ strapi }*/) {},
@@ -14,6 +14,7 @@ module.exports = {
         BOMB,
         LOAD,
         FISCAL,
+        VEHICLE,
         BANNER,
         CUSTOMER_LEVEL,
       ],
