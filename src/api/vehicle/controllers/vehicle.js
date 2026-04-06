@@ -1,6 +1,6 @@
 const { VEHICLE } = require("../../../constants/models");
 const { findMany } = require("../../../helpers");
-const { ConflictError, NotFoundError } = require("../../../helpers/errors");
+const { BadRequestError, ConflictError, NotFoundError } = require("../../../helpers/errors");
 const { validateCreateVehicle } = require("../validation");
 
 const { createCoreController } = require("@strapi/strapi").factories;
@@ -53,6 +53,37 @@ const vehicleFields = {
 };
 
 module.exports = createCoreController(VEHICLE, ({ strapi }) => ({
+    async uploadInsuranceCover(ctx) {
+        const file = ctx.request?.files?.file;
+
+        if (!file) {
+            throw new BadRequestError("Insurance cover image is required.", {
+                key : "vehicle.insuranceCoverRequired",
+                path : ctx.request.path,
+            });
+        }
+
+        const uploadedFiles = await strapi.plugin("upload").service("upload").upload({
+            data : {},
+            files : file,
+        });
+
+        const uploadedFile = uploadedFiles?.[0];
+
+        if (!uploadedFile?.id) {
+            throw new BadRequestError("Insurance cover image could not be uploaded.", {
+                key : "vehicle.insuranceCoverUploadFailed",
+                path : ctx.request.path,
+            });
+        }
+
+        return {
+            id : uploadedFile.id,
+            url : uploadedFile.url,
+            name : uploadedFile.name,
+        };
+    },
+
     async find(ctx) {
         const { id: userId } = ctx.state.user;
 
