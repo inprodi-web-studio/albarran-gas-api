@@ -23,6 +23,9 @@ const loadFields = {
     customer: {
       fields: ["uuid", "name", "lastName"],
     },
+    vehicle: {
+      fields: ["uuid", "brand", "model", "plates"],
+    },
   },
 };
 

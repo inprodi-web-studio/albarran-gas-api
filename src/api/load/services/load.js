@@ -1,5 +1,6 @@
-const { LOAD, USER, CUSTOMER_LEVEL, FISCAL } = require("../../../constants/models");
+const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE } = require("../../../constants/models");
 const { findOneByUuid } = require("../../../helpers");
+const { BadRequestError } = require("../../../helpers/errors");
 
 const { createCoreService } = require("@strapi/strapi").factories;
 
@@ -54,26 +55,57 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
     async parseCustomer(data) {
         const split = data.customer.split("|");
+        const customerUuid = split[0];
+        const fiscalQrValue = split[1] || "none";
+        const requestedVehicle = typeof data.vehicle === "string" ? data.vehicle.trim() : "";
+        const vehicleQrValue = requestedVehicle.length > 0 ? requestedVehicle : (split[2] || "none");
 
-        data.customer = split[0];
+        data.customer = customerUuid;
 
-        if ( split[1] === "none" ) {
+        if ( fiscalQrValue === "none" ) {
             data.fiscal = null;
         } else {
-            const rfc = split[1];
+            const rfc = fiscalQrValue;
 
             const fiscal = await strapi.query(FISCAL).findOne({
                 where : {
                     rfc,
                     user : {
-                        uuid : split[0],
+                        uuid : customerUuid,
                     }
                 },
             });
 
+            if ( !fiscal ) {
+                throw new BadRequestError("Fiscal not found for customer.", {
+                    key : "load.fiscalNotFound",
+                });
+            }
+
             data.fiscal = fiscal.id;
         }
 
+        if ( vehicleQrValue === "none" ) {
+            data.vehicle = null;
+            return;
+        }
+
+        const vehicle = await strapi.query(VEHICLE).findOne({
+            where : {
+                uuid : vehicleQrValue,
+                user : {
+                    uuid : customerUuid,
+                },
+            },
+        });
+
+        if ( !vehicle ) {
+            throw new BadRequestError("Vehicle not found for customer.", {
+                key : "load.vehicleNotFound",
+            });
+        }
+
+        data.vehicle = vehicle.id;
 
     },
 

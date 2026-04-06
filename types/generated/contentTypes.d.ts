@@ -958,6 +958,11 @@ export interface ApiLoadLoad extends Schema.CollectionType {
       'oneToOne',
       'api::fiscal.fiscal'
     >;
+    vehicle: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'api::vehicle.vehicle'
+    >;
     branch: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
