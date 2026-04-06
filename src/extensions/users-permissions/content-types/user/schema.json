@@ -121,6 +121,18 @@
       "relation": "oneToMany",
       "target": "api::vehicle.vehicle",
       "mappedBy": "user"
+    },
+    "fleetsOwned": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::fleet.fleet",
+      "mappedBy": "owner"
+    },
+    "fleets": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::fleet.fleet",
+      "mappedBy": "users"
     }
   }
 }

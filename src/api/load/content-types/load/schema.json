@@ -49,6 +49,12 @@
       "relation": "manyToOne",
       "target": "api::vehicle.vehicle"
     },
+    "fleet": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::fleet.fleet",
+      "inversedBy": "loads"
+    },
     "branch": {
       "type": "string"
     }

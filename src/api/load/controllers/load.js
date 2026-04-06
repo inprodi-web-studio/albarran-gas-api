@@ -26,6 +26,9 @@ const loadFields = {
     vehicle: {
       fields: ["uuid", "brand", "model", "plates"],
     },
+    fleet: {
+      fields: ["uuid", "name", "code"],
+    },
   },
 };
 
@@ -137,6 +140,8 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     await strapi.service(LOAD).parseCustomer(data);
 
     await strapi.service(LOAD).assignDiscount(data);
+
+    await strapi.service(LOAD).parseFleet(data);
 
     const newLoad = await strapi.entityService.create(LOAD, {
       data: {

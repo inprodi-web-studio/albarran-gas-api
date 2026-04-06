@@ -1,4 +1,4 @@
-const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE } = require("../../../constants/models");
+const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE, FLEET } = require("../../../constants/models");
 const { findOneByUuid } = require("../../../helpers");
 const { BadRequestError } = require("../../../helpers/errors");
 
@@ -136,5 +136,41 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
     
             data.discount = discount;
         }
+    },
+
+    async parseFleet(data) {
+        const requestedFleet = typeof data.fleet === "string" ? data.fleet.trim() : "";
+
+        if (!requestedFleet) {
+            data.fleet = null;
+            return;
+        }
+
+        const fleet = await strapi.query(FLEET).findOne({
+            where : {
+                uuid : requestedFleet,
+            },
+            populate : {
+                users : {
+                    fields : ["id"],
+                },
+            },
+        });
+
+        if (!fleet) {
+            throw new BadRequestError("Fleet not found for customer.", {
+                key : "load.fleetNotFound",
+            });
+        }
+
+        const isCustomerInFleet = Array.isArray(fleet.users) && fleet.users.some((user) => user.id === data.customer);
+
+        if (!isCustomerInFleet) {
+            throw new BadRequestError("Customer is not part of this fleet.", {
+                key : "load.fleetNotAllowed",
+            });
+        }
+
+        data.fleet = fleet.id;
     },
 }));
