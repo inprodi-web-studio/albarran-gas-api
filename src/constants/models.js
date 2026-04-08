@@ -9,4 +9,5 @@ module.exports = {
     FLEET          : "api::fleet.fleet",
     CUSTOMER_LEVEL : "api::customer-level.customer-level",
     FLEET_LEVEL    : "api::fleet-level.fleet-level",
+    PROMOTION      : "api::promotion.promotion",
 }

@@ -1,0 +1,45 @@
+{
+  "collectionName": "components_promotion_conditions",
+  "info": {
+    "displayName": "Condition",
+    "description": "Reglas que determinan si la promoción aplica."
+  },
+  "options": {},
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "weekday",
+        "birthday",
+        "specific_date",
+        "liters_range"
+      ],
+      "required": true,
+      "default": "weekday"
+    },
+    "weekday": {
+      "type": "enumeration",
+      "enum": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ]
+    },
+    "specificDate": {
+      "type": "date"
+    },
+    "minLiters": {
+      "type": "decimal"
+    },
+    "maxLiters": {
+      "type": "decimal"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

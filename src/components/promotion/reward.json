@@ -1,0 +1,30 @@
+{
+  "collectionName": "components_promotion_rewards",
+  "info": {
+    "displayName": "Reward",
+    "description": "Beneficios aplicables cuando se cumplen las condiciones."
+  },
+  "options": {},
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "discount_per_liter",
+        "liters_multiplier",
+        "fixed_discount"
+      ],
+      "required": true,
+      "default": "discount_per_liter"
+    },
+    "value": {
+      "type": "decimal",
+      "required": true
+    },
+    "maxValue": {
+      "type": "decimal"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

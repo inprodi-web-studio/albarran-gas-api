@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "promotions",
+  "info": {
+    "singularName": "promotion",
+    "pluralName": "promotions",
+    "displayName": "Promociones",
+    "description": "Promociones configurables con reglas de vigencia, condiciones y beneficios."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uuid": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "isActive": {
+      "type": "boolean",
+      "required": true,
+      "default": true
+    },
+    "startsAt": {
+      "type": "date",
+      "required": true
+    },
+    "endsAt": {
+      "type": "date"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "America/Mexico_City"
+    },
+    "priority": {
+      "type": "integer",
+      "default": 100
+    },
+    "stackable": {
+      "type": "boolean",
+      "default": false
+    },
+    "conditions": {
+      "displayName": "Conditions",
+      "type": "component",
+      "repeatable": true,
+      "required": true,
+      "min": 1,
+      "component": "promotion.condition"
+    },
+    "rewards": {
+      "displayName": "Rewards",
+      "type": "component",
+      "repeatable": true,
+      "required": true,
+      "min": 1,
+      "component": "promotion.reward"
+    }
+  }
+}

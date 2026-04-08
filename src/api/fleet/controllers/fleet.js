@@ -33,7 +33,7 @@ const normalizeFleetData = (data = {}) => ({
 
 module.exports = createCoreController(FLEET, ({ strapi }) => ({
     async find(ctx) {
-        const { id: userId } = ctx.state.user;
+        const { id: userId, uuid: userUuid } = ctx.state.user;
 
         const fleets = await findMany(FLEET, fleetFields, {
             users : {
@@ -41,14 +41,33 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             },
         });
 
-        const fleetsWithUsersCount = fleets.data.map(({ users, ...fleet }) => ({
-            ...fleet,
-            usersCount : Array.isArray(users) ? users.length : 0,
-        }));
+        const fleetsWithStats = await Promise.all(
+            fleets.data.map(async ({ users, ...fleet }) => {
+                const loads = await strapi.db.query(LOAD).findMany({
+                    where : {
+                        fleet : fleet.id,
+                    },
+                    select : ["quantity"],
+                });
+
+                const totalLiters = loads.reduce((accumulator, load) => {
+                    return accumulator + Number(load.quantity ?? 0);
+                }, 0);
+
+                const ownerUuid = typeof fleet.owner === "object" ? fleet.owner?.uuid : null;
+
+                return {
+                    ...fleet,
+                    usersCount : Array.isArray(users) ? users.length : 0,
+                    isOwner : ownerUuid === userUuid,
+                    totalLiters : parseFloat(totalLiters.toFixed(2)),
+                };
+            })
+        );
 
         return {
             ...fleets,
-            data : fleetsWithUsersCount,
+            data : fleetsWithStats,
         };
     },
 
@@ -78,7 +97,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
         }
 
         const users = Array.isArray(fleet.users) ? fleet.users : [];
-        const isMember = users.some((user) => user.id === userId);
+        const isMember = users.some((user) => Number(user.id) === Number(userId));
 
         if (!isMember) {
             throw new ForbiddenError("You are not part of this fleet.", {
@@ -110,7 +129,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             name : fleet.name,
             code : fleet.code,
             owner,
-            isOwner : ownerId === userId,
+            isOwner : Number(ownerId) === Number(userId),
             usersCount : users.length,
             totalLiters : parseFloat(totalLiters.toFixed(2)),
         };
@@ -139,6 +158,8 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
         return {
             ...fleetData,
             usersCount : Array.isArray(users) ? users.length : 0,
+            isOwner : true,
+            totalLiters : 0,
         };
     },
 

@@ -2,7 +2,7 @@
 
 const { uuid } = require("uuidv4");
 
-const { USER, BOMB, LOAD, CUSTOMER_LEVEL, BANNER, FISCAL, VEHICLE, FLEET, FLEET_LEVEL } = require("./constants/models");
+const { USER, BOMB, LOAD, CUSTOMER_LEVEL, BANNER, FISCAL, VEHICLE, FLEET, FLEET_LEVEL, PROMOTION } = require("./constants/models");
 
 module.exports = {
   register(/*{ strapi }*/) {},
@@ -19,6 +19,7 @@ module.exports = {
         BANNER,
         CUSTOMER_LEVEL,
         FLEET_LEVEL,
+        PROMOTION,
       ],
       async beforeCreate( event ) {
         const { data } = event.params;

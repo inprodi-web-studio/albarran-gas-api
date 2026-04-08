@@ -8,31 +8,32 @@ const FIRST_LOAD_DISCOUNT = 1;
 
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
-        const totalLoads = await strapi.db.connection("loads")
-            .join("loads_customer_links", "loads.id", "loads_customer_links.load_id")
-            .where("loads_customer_links.user_id", customerId)
-            .sum("quantity as total")
-            .first();
+        const personalLoads = await strapi.db.query(LOAD).findMany({
+            where : {
+                customer : customerId,
+                fleet : null,
+            },
+            select : ["quantity", "discount"],
+        });
 
-        const loads = await strapi.db.connection("loads")
-            .join("loads_customer_links", "loads.id", "loads_customer_links.load_id")
-            .where("loads_customer_links.user_id", customerId)
-            .select("discount", "quantity");
+        const totalPersonalLiters = personalLoads.reduce((total, item) => {
+            return total + Number(item.quantity ?? 0);
+        }, 0);
 
-        const totalDiscount = loads.reduce((total, item) => {
-            return total + (item.discount * item.quantity);
+        const totalDiscount = personalLoads.reduce((total, item) => {
+            return total + (Number(item.discount ?? 0) * Number(item.quantity ?? 0));
         }, 0);
 
         let level;
 
-        if ( totalLoads?.total ) {
+        if ( totalPersonalLiters > 0 ) {
             level = await strapi.query(CUSTOMER_LEVEL).findOne({
                 where : {
                     min : {
-                        $lt : totalLoads?.total,
+                        $lt : totalPersonalLiters,
                     },
                     max : {
-                        $gte : totalLoads?.total,
+                        $gte : totalPersonalLiters,
                     },
                 },
                 select : ["uuid", "name", "discount", "min", "max"],
@@ -47,7 +48,7 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         }
 
         return {
-            total : parseFloat( totalLoads?.total?.toFixed(2) ) || 0,
+            total : parseFloat( totalPersonalLiters.toFixed(2) ) || 0,
             discount : parseFloat( totalDiscount?.toFixed(2) ) || 0,
             level,
         };
@@ -59,8 +60,12 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         const fiscalQrValue = split[1] || "none";
         const requestedVehicle = typeof data.vehicle === "string" ? data.vehicle.trim() : "";
         const vehicleQrValue = requestedVehicle.length > 0 ? requestedVehicle : (split[2] || "none");
+        const requestedFleet = typeof data.fleet === "string" ? data.fleet.trim() : "";
+        const fleetQrValue = split[3] || "none";
+        const fleetValue = requestedFleet.length > 0 ? requestedFleet : fleetQrValue;
 
         data.customer = customerUuid;
+        data.fleet = fleetValue === "none" ? null : fleetValue;
 
         if ( fiscalQrValue === "none" ) {
             data.fiscal = null;
@@ -87,25 +92,24 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         if ( vehicleQrValue === "none" ) {
             data.vehicle = null;
-            return;
-        }
-
-        const vehicle = await strapi.query(VEHICLE).findOne({
-            where : {
-                uuid : vehicleQrValue,
-                user : {
-                    uuid : customerUuid,
+        } else {
+            const vehicle = await strapi.query(VEHICLE).findOne({
+                where : {
+                    uuid : vehicleQrValue,
+                    user : {
+                        uuid : customerUuid,
+                    },
                 },
-            },
-        });
-
-        if ( !vehicle ) {
-            throw new BadRequestError("Vehicle not found for customer.", {
-                key : "load.vehicleNotFound",
             });
-        }
 
-        data.vehicle = vehicle.id;
+            if ( !vehicle ) {
+                throw new BadRequestError("Vehicle not found for customer.", {
+                    key : "load.vehicleNotFound",
+                });
+            }
+
+            data.vehicle = vehicle.id;
+        }
 
     },
 
@@ -114,22 +118,28 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         data.customer = customer.id;
 
-        const totalLoads = await strapi.db.connection("loads")
-            .join("loads_customer_links", "loads.id", "loads_customer_links.load_id")
-            .where("loads_customer_links.user_id", customer.id)
-            .sum("quantity as total")
-            .first();
+        const personalLoads = await strapi.db.query(LOAD).findMany({
+            where : {
+                customer : customer.id,
+                fleet : null,
+            },
+            select : ["quantity"],
+        });
 
-        if ( !totalLoads?.total ) {
+        const totalPersonalLiters = personalLoads.reduce((total, item) => {
+            return total + Number(item.quantity ?? 0);
+        }, 0);
+
+        if ( totalPersonalLiters <= 0 ) {
             data.discount = FIRST_LOAD_DISCOUNT;
         } else {
             const { discount } = await strapi.query(CUSTOMER_LEVEL).findOne({
                 where : {
                     min : {
-                        $lt : totalLoads?.total,
+                        $lt : totalPersonalLiters,
                     },
                     max : {
-                        $gte : totalLoads?.total,
+                        $gte : totalPersonalLiters,
                     },
                 },
             });
