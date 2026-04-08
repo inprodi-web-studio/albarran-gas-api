@@ -134,12 +134,17 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
   async assignLoad(ctx) {
     const data = ctx.request.body;
     const user = ctx.state.user;
+    const promotionContext = {
+      customer: data.customer,
+      vehicle: data.vehicle,
+      fleet: data.fleet,
+    };
 
     await validateAssignLoad(data);
 
     await strapi.service(LOAD).parseCustomer(data);
 
-    await strapi.service(LOAD).assignDiscount(data);
+    await strapi.service(LOAD).assignDiscount(data, promotionContext);
 
     await strapi.service(LOAD).parseFleet(data);
 

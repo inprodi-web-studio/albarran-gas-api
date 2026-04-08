@@ -14,6 +14,36 @@ Este content-type permite crear promociones con:
 - Todas las condiciones de `conditions` deben cumplirse para aplicar la promoción.
 - Todos los beneficios de `rewards` se consideran aplicables a la promoción.
 
+## Endpoint para despachador
+
+- `POST /api/dispatcher/promotions/resolve`
+
+Body:
+
+```json
+{
+  "customer": "customer-uuid|RFC|vehicle-uuid|fleet-uuid",
+  "vehicle": null,
+  "fleet": null,
+  "quantity": 35.7
+}
+```
+
+Respuesta:
+
+- `applies: true|false`
+- `promotion`: promoción ganadora o `null`
+- `promotion.rewardSummary.estimatedDiscount`: descuento estimado total
+- `promotion.rewardSummary.discountPerLiter`: descuento por litro acumulado
+- `promotion.rewardSummary.effectiveDiscountPerLiter`: descuento por litro efectivo para aplicar en `load.discount`
+
+Regla de selección:
+
+- Se elige la promoción con mayor `estimatedDiscount`.
+- Si empatan, se usa mayor `discountPerLiter`.
+- Si empatan, gana menor `priority`.
+- Si empatan, gana la más reciente.
+
 ## Ejemplos de carga
 
 ## 1) Todos los lunes, del 1ero de enero al 28 de febrero, +0.2 descuento por litro

@@ -37,6 +37,7 @@ const roles = {
             },
             [BOMB] : ["find"],
             [LOAD] : ["getLoads", "assignLoad"],
+            [PROMOTION] : ["resolveForDispatcher"],
         },
         meta : {
             type        : "dispatcher",

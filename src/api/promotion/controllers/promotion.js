@@ -7,6 +7,7 @@
 const { PROMOTION } = require("../../../constants/models");
 const { findMany } = require("../../../helpers");
 const { createCoreController } = require("@strapi/strapi").factories;
+const { validateResolvePromotion } = require("../validation");
 
 const DEFAULT_TIMEZONE = "America/Mexico_City";
 
@@ -56,7 +57,7 @@ const getCurrentDateInTimezone = (timezone) => {
     }).format(new Date());
 };
 
-module.exports = createCoreController(PROMOTION, () => ({
+module.exports = createCoreController(PROMOTION, ({ strapi }) => ({
     async find(ctx) {
         const timezone = parseTimezone(ctx.query?.timezone);
         const today = getCurrentDateInTimezone(timezone);
@@ -81,5 +82,15 @@ module.exports = createCoreController(PROMOTION, () => ({
         });
 
         return promotions;
+    },
+
+    async resolveForDispatcher(ctx) {
+        const data = ctx.request.body || {};
+
+        await validateResolvePromotion(data);
+
+        const promotion = await strapi.service(PROMOTION).resolveForDispatcher(data);
+
+        return promotion;
     },
 }));

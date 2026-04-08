@@ -1,10 +1,20 @@
-const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE, FLEET } = require("../../../constants/models");
+const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE, FLEET, PROMOTION } = require("../../../constants/models");
 const { findOneByUuid } = require("../../../helpers");
 const { BadRequestError } = require("../../../helpers/errors");
 
 const { createCoreService } = require("@strapi/strapi").factories;
 
 const FIRST_LOAD_DISCOUNT = 1;
+
+const toNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+
+    return parsed;
+};
 
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
@@ -113,7 +123,7 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
     },
 
-    async assignDiscount(data) {
+    async assignDiscount(data, promotionContext = null) {
         const customer = await findOneByUuid( data.customer, USER );
 
         data.customer = customer.id;
@@ -130,10 +140,10 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
             return total + Number(item.quantity ?? 0);
         }, 0);
 
-        if ( totalPersonalLiters <= 0 ) {
-            data.discount = FIRST_LOAD_DISCOUNT;
-        } else {
-            const { discount } = await strapi.query(CUSTOMER_LEVEL).findOne({
+        let baseDiscount = FIRST_LOAD_DISCOUNT;
+
+        if ( totalPersonalLiters > 0 ) {
+            const level = await strapi.query(CUSTOMER_LEVEL).findOne({
                 where : {
                     min : {
                         $lt : totalPersonalLiters,
@@ -143,9 +153,31 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
                     },
                 },
             });
-    
-            data.discount = discount;
+
+            baseDiscount = toNumber(level?.discount, FIRST_LOAD_DISCOUNT);
         }
+
+        if ( promotionContext?.customer ) {
+            const promotionResolution = await strapi.service(PROMOTION).resolveForDispatcher({
+                customer : promotionContext.customer,
+                vehicle : promotionContext.vehicle ?? null,
+                fleet : promotionContext.fleet ?? null,
+                quantity : data.quantity,
+            });
+
+            if (promotionResolution?.applies) {
+                const rewardSummary = promotionResolution.promotion?.rewardSummary || {};
+                const promotionDiscountPerLiter = toNumber(
+                    rewardSummary.effectiveDiscountPerLiter,
+                    toNumber(rewardSummary.discountPerLiter, 0)
+                );
+
+                data.discount = promotionDiscountPerLiter;
+                return;
+            }
+        }
+
+        data.discount = baseDiscount;
     },
 
     async parseFleet(data) {
