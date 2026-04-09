@@ -1,6 +1,6 @@
 "use strict";
 
-const { FLEET, LOAD } = require("../../../constants/models");
+const { FLEET, LOAD, FLEET_LEVEL } = require("../../../constants/models");
 const { findMany } = require("../../../helpers");
 const { ForbiddenError, NotFoundError } = require("../../../helpers/errors");
 const { validateCreateFleet } = require("../validation");
@@ -31,6 +31,104 @@ const normalizeFleetData = (data = {}) => ({
     name : normalizeString(data.name),
 });
 
+const toNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const mapLevel = (level) => {
+    if (!level) {
+        return null;
+    }
+
+    return {
+        uuid : level.uuid ?? null,
+        name : level.name ?? "",
+        min : toNumber(level.min),
+        max : toNumber(level.max),
+        discount : toNumber(level.discount),
+    };
+};
+
+const getFleetLevels = async (strapi) => {
+    return strapi.db.query(FLEET_LEVEL).findMany({
+        select : ["uuid", "name", "min", "max", "discount"],
+        orderBy : {
+            min : "asc",
+        },
+    });
+};
+
+const buildFleetLevelInfo = (totalLiters, levels = []) => {
+    const liters = parseFloat(toNumber(totalLiters).toFixed(2));
+
+    if (!Array.isArray(levels) || levels.length === 0) {
+        return {
+            level : null,
+            nextLevel : null,
+            progress : {
+                currentLiters : liters,
+                percentToNextLevel : 0,
+                litersToNextLevel : 0,
+                rangeStart : 0,
+                rangeEnd : 0,
+            },
+        };
+    }
+
+    const sortedLevels = levels.slice().sort((a, b) => {
+        return toNumber(a.min) - toNumber(b.min);
+    });
+
+    let currentLevelIndex = sortedLevels.findIndex((level) => {
+        const min = toNumber(level.min);
+        const max = toNumber(level.max, Number.POSITIVE_INFINITY);
+
+        return liters >= min && liters <= max;
+    });
+
+    if (currentLevelIndex === -1) {
+        if (liters < toNumber(sortedLevels[0].min)) {
+            currentLevelIndex = 0;
+        } else {
+            currentLevelIndex = sortedLevels.length - 1;
+        }
+    }
+
+    const currentLevelRaw = sortedLevels[currentLevelIndex];
+    const nextLevelRaw = currentLevelIndex < sortedLevels.length - 1
+        ? sortedLevels[currentLevelIndex + 1]
+        : null;
+
+    const currentMin = toNumber(currentLevelRaw?.min);
+    const currentMax = toNumber(currentLevelRaw?.max, currentMin);
+    const nextMin = nextLevelRaw ? toNumber(nextLevelRaw.min, currentMax) : currentMax;
+
+    let percentToNextLevel = nextLevelRaw
+        ? ((liters - currentMin) / (nextMin - currentMin)) * 100
+        : 100;
+
+    if (!Number.isFinite(percentToNextLevel)) {
+        percentToNextLevel = nextLevelRaw ? 0 : 100;
+    }
+
+    percentToNextLevel = Math.min(100, Math.max(0, percentToNextLevel));
+
+    const litersToNextLevel = nextLevelRaw ? Math.max(0, nextMin - liters) : 0;
+
+    return {
+        level : mapLevel(currentLevelRaw),
+        nextLevel : mapLevel(nextLevelRaw),
+        progress : {
+            currentLiters : liters,
+            percentToNextLevel : parseFloat(percentToNextLevel.toFixed(2)),
+            litersToNextLevel : parseFloat(litersToNextLevel.toFixed(2)),
+            rangeStart : parseFloat(currentMin.toFixed(2)),
+            rangeEnd : parseFloat((nextLevelRaw ? nextMin : currentMax).toFixed(2)),
+        },
+    };
+};
+
 module.exports = createCoreController(FLEET, ({ strapi }) => ({
     async find(ctx) {
         const { id: userId, uuid: userUuid } = ctx.state.user;
@@ -40,6 +138,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
                 id : userId,
             },
         });
+        const fleetLevels = await getFleetLevels(strapi);
 
         const fleetsWithStats = await Promise.all(
             fleets.data.map(async ({ users, ...fleet }) => {
@@ -55,12 +154,14 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
                 }, 0);
 
                 const ownerUuid = typeof fleet.owner === "object" ? fleet.owner?.uuid : null;
+                const levelInfo = buildFleetLevelInfo(totalLiters, fleetLevels);
 
                 return {
                     ...fleet,
                     usersCount : Array.isArray(users) ? users.length : 0,
                     isOwner : ownerUuid === userUuid,
                     totalLiters : parseFloat(totalLiters.toFixed(2)),
+                    ...levelInfo,
                 };
             })
         );
@@ -116,6 +217,8 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
         const totalLiters = loads.reduce((accumulator, load) => {
             return accumulator + Number(load.quantity ?? 0);
         }, 0);
+        const fleetLevels = await getFleetLevels(strapi);
+        const levelInfo = buildFleetLevelInfo(totalLiters, fleetLevels);
 
         const ownerId = typeof fleet.owner === "object" ? fleet.owner?.id : fleet.owner;
         const owner = typeof fleet.owner === "object" ? {
@@ -132,6 +235,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             isOwner : Number(ownerId) === Number(userId),
             usersCount : users.length,
             totalLiters : parseFloat(totalLiters.toFixed(2)),
+            ...levelInfo,
         };
     },
 
@@ -142,6 +246,8 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
         await validateCreateFleet(data);
 
         const code = await strapi.service(FLEET).generateUniqueCode();
+        const fleetLevels = await getFleetLevels(strapi);
+        const levelInfo = buildFleetLevelInfo(0, fleetLevels);
 
         const newFleet = await strapi.entityService.create(FLEET, {
             data : {
@@ -160,6 +266,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             usersCount : Array.isArray(users) ? users.length : 0,
             isOwner : true,
             totalLiters : 0,
+            ...levelInfo,
         };
     },
 
