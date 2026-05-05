@@ -3,6 +3,8 @@ const { yup, validateYupSchema } = require("../../helpers/validators");
 const createVehicleSchema = yup.object().shape({
     brand : yup.string().required("Brand is required"),
     model : yup.string().required("Model is required"),
+    version : yup.string().required("Version is required"),
+    year : yup.number().integer().min(1900).max(2100).required("Year is required"),
     color : yup.string().required("Color is required"),
     plates : yup.string().required("Plates are required"),
     insurancePolicy : yup.string().nullable(),

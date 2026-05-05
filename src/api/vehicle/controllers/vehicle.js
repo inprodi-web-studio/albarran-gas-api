@@ -23,10 +23,32 @@ const normalizeNullableString = (value) => {
     return normalizedValue.length > 0 ? normalizedValue : null;
 };
 
+const normalizeYear = (value) => {
+    if (typeof value === "number") {
+        return value;
+    }
+
+    if (typeof value !== "string") {
+        return value;
+    }
+
+    const normalizedValue = value.trim();
+
+    if (normalizedValue.length === 0) {
+        return value;
+    }
+
+    const parsedYear = Number.parseInt(normalizedValue, 10);
+
+    return Number.isNaN(parsedYear) ? value : parsedYear;
+};
+
 const normalizeVehicleData = (data) => ({
     ...data,
     brand : normalizeString(data.brand),
     model : normalizeString(data.model),
+    version : normalizeString(data.version),
+    year : normalizeYear(data.year),
     color : normalizeString(data.color),
     plates : normalizeString(data.plates),
     insurancePolicy : normalizeNullableString(data.insurancePolicy),
@@ -39,6 +61,8 @@ const vehicleFields = {
         "uuid",
         "brand",
         "model",
+        "version",
+        "year",
         "color",
         "plates",
         "insurancePolicy",

@@ -988,6 +988,8 @@ export interface ApiVehicleVehicle extends Schema.CollectionType {
     uuid: Attribute.String;
     brand: Attribute.String & Attribute.Required;
     model: Attribute.String & Attribute.Required;
+    version: Attribute.String & Attribute.Required;
+    year: Attribute.Integer & Attribute.Required;
     color: Attribute.String & Attribute.Required;
     plates: Attribute.String & Attribute.Required;
     insurancePolicy: Attribute.String;
