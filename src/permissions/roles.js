@@ -22,7 +22,7 @@ const roles = {
             [BANNER] : ["findMany_Customer"],
             [PROMOTION] : ["find"],
             [VEHICLE] : ["find", "create", "delete", "uploadInsuranceCover", "setDefault"],
-            [FLEET] : ["find", "create", "delete", "findOne_Customer"],
+            [FLEET] : ["find", "create", "delete", "findOne_Customer", "join_Customer"],
         },
         meta : {
             type        : "customer",

@@ -3,7 +3,7 @@
 const { FLEET, LOAD, FLEET_LEVEL } = require("../../../constants/models");
 const { findMany } = require("../../../helpers");
 const { ForbiddenError, NotFoundError } = require("../../../helpers/errors");
-const { validateCreateFleet } = require("../validation");
+const { validateCreateFleet, validateJoinFleet } = require("../validation");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
@@ -31,18 +31,23 @@ const normalizeFleetData = (data = {}) => ({
     name : normalizeString(data.name),
 });
 
+const normalizeJoinFleetData = (data = {}) => ({
+    code : normalizeString(data.code),
+});
+
 const toNumber = (value, fallback = 0) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const mapLevel = (level) => {
+const mapLevel = (level, number = null) => {
     if (!level) {
         return null;
     }
 
     return {
         uuid : level.uuid ?? null,
+        number,
         name : level.name ?? "",
         min : toNumber(level.min),
         max : toNumber(level.max),
@@ -57,6 +62,15 @@ const getFleetLevels = async (strapi) => {
             min : "asc",
         },
     });
+};
+
+const fleetDetailPopulate = {
+    owner : {
+        fields : ["id", "uuid", "name", "lastName"],
+    },
+    users : {
+        fields : ["id"],
+    },
 };
 
 const buildFleetLevelInfo = (totalLiters, levels = []) => {
@@ -117,8 +131,11 @@ const buildFleetLevelInfo = (totalLiters, levels = []) => {
     const litersToNextLevel = nextLevelRaw ? Math.max(0, nextMin - liters) : 0;
 
     return {
-        level : mapLevel(currentLevelRaw),
-        nextLevel : mapLevel(nextLevelRaw),
+        level : mapLevel(currentLevelRaw, currentLevelIndex + 1),
+        nextLevel : mapLevel(
+            nextLevelRaw,
+            nextLevelRaw ? currentLevelIndex + 2 : null
+        ),
         progress : {
             currentLiters : liters,
             percentToNextLevel : parseFloat(percentToNextLevel.toFixed(2)),
@@ -126,6 +143,40 @@ const buildFleetLevelInfo = (totalLiters, levels = []) => {
             rangeStart : parseFloat(currentMin.toFixed(2)),
             rangeEnd : parseFloat((nextLevelRaw ? nextMin : currentMax).toFixed(2)),
         },
+    };
+};
+
+const buildFleetDetailResponse = async (strapi, fleet, userId) => {
+    const users = Array.isArray(fleet.users) ? fleet.users : [];
+    const loads = await strapi.db.query(LOAD).findMany({
+        where : {
+            fleet : fleet.id,
+        },
+        select : ["quantity"],
+    });
+
+    const totalLiters = loads.reduce((accumulator, load) => {
+        return accumulator + Number(load.quantity ?? 0);
+    }, 0);
+
+    const fleetLevels = await getFleetLevels(strapi);
+    const levelInfo = buildFleetLevelInfo(totalLiters, fleetLevels);
+    const ownerId = typeof fleet.owner === "object" ? fleet.owner?.id : fleet.owner;
+    const owner = typeof fleet.owner === "object" ? {
+        uuid : fleet.owner?.uuid,
+        name : fleet.owner?.name,
+        lastName : fleet.owner?.lastName,
+    } : null;
+
+    return {
+        uuid : fleet.uuid,
+        name : fleet.name,
+        code : fleet.code,
+        owner,
+        isOwner : Number(ownerId) === Number(userId),
+        usersCount : users.length,
+        totalLiters : parseFloat(totalLiters.toFixed(2)),
+        ...levelInfo,
     };
 };
 
@@ -180,14 +231,7 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             where : {
                 uuid,
             },
-            populate : {
-                owner : {
-                    fields : ["id", "uuid", "name", "lastName"],
-                },
-                users : {
-                    fields : ["id"],
-                },
-            },
+            populate : fleetDetailPopulate,
         });
 
         if (!fleet) {
@@ -207,36 +251,50 @@ module.exports = createCoreController(FLEET, ({ strapi }) => ({
             });
         }
 
-        const loads = await strapi.db.query(LOAD).findMany({
+        return await buildFleetDetailResponse(strapi, fleet, userId);
+    },
+
+    async join_Customer(ctx) {
+        const { id: userId } = ctx.state.user;
+        const data = normalizeJoinFleetData(ctx.request.body);
+
+        await validateJoinFleet(data);
+
+        const fleet = await strapi.query(FLEET).findOne({
             where : {
-                fleet : fleet.id,
+                code : data.code,
             },
-            select : ["quantity"],
+            populate : fleetDetailPopulate,
         });
 
-        const totalLiters = loads.reduce((accumulator, load) => {
-            return accumulator + Number(load.quantity ?? 0);
-        }, 0);
-        const fleetLevels = await getFleetLevels(strapi);
-        const levelInfo = buildFleetLevelInfo(totalLiters, fleetLevels);
+        if (!fleet) {
+            throw new NotFoundError("Fleet not found.", {
+                key : "fleet.notFound",
+                path : ctx.request.path,
+            });
+        }
 
-        const ownerId = typeof fleet.owner === "object" ? fleet.owner?.id : fleet.owner;
-        const owner = typeof fleet.owner === "object" ? {
-            uuid : fleet.owner?.uuid,
-            name : fleet.owner?.name,
-            lastName : fleet.owner?.lastName,
-        } : null;
+        const users = Array.isArray(fleet.users) ? fleet.users : [];
+        const userIds = users.map((user) => {
+            return Number(user.id);
+        });
 
-        return {
-            uuid : fleet.uuid,
-            name : fleet.name,
-            code : fleet.code,
-            owner,
-            isOwner : Number(ownerId) === Number(userId),
-            usersCount : users.length,
-            totalLiters : parseFloat(totalLiters.toFixed(2)),
-            ...levelInfo,
-        };
+        if (!userIds.includes(Number(userId))) {
+            await strapi.entityService.update(FLEET, fleet.id, {
+                data : {
+                    users : [...new Set([...userIds, Number(userId)])],
+                },
+            });
+        }
+
+        const updatedFleet = await strapi.query(FLEET).findOne({
+            where : {
+                id : fleet.id,
+            },
+            populate : fleetDetailPopulate,
+        });
+
+        return await buildFleetDetailResponse(strapi, updatedFleet, userId);
     },
 
     async create(ctx) {
