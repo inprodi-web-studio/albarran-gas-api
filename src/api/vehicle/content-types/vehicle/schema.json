@@ -56,6 +56,10 @@
         "images"
       ]
     },
+    "isDefault": {
+      "type": "boolean",
+      "default": false
+    },
     "user": {
       "type": "relation",
       "relation": "manyToOne",

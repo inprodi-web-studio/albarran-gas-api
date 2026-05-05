@@ -21,7 +21,7 @@ const roles = {
             [LOAD] : ["getLoads_Customer"],
             [BANNER] : ["findMany_Customer"],
             [PROMOTION] : ["find"],
-            [VEHICLE] : ["find", "create", "delete", "uploadInsuranceCover"],
+            [VEHICLE] : ["find", "create", "delete", "uploadInsuranceCover", "setDefault"],
             [FLEET] : ["find", "create", "delete", "findOne_Customer"],
         },
         meta : {

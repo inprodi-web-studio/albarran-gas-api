@@ -68,6 +68,7 @@ const vehicleFields = {
         "insurancePolicy",
         "insuranceExpiration",
         "insuranceCompany",
+        "isDefault",
     ],
     populate : {
         insuranceCoverPhoto : {
@@ -154,15 +155,62 @@ module.exports = createCoreController(VEHICLE, ({ strapi }) => ({
             }
         }
 
+        const userVehiclesCount = await strapi.query(VEHICLE).count({
+            where : {
+                user : userId,
+            },
+        });
+
         const newVehicle = await strapi.entityService.create(VEHICLE, {
             data : {
                 ...data,
                 user : userId,
+                isDefault : userVehiclesCount === 0,
             },
             ...vehicleFields,
         });
 
         return newVehicle;
+    },
+
+    async setDefault(ctx) {
+        const { id: uuid } = ctx.params;
+        const { id: userId } = ctx.state.user;
+
+        const vehicle = await strapi.query(VEHICLE).findOne({
+            where : {
+                uuid,
+                user : userId,
+            },
+        });
+
+        if (!vehicle) {
+            throw new NotFoundError("Vehicle not found.", {
+                key : "vehicle.notFound",
+                path : ctx.request.path,
+            });
+        }
+
+        if (!vehicle.isDefault) {
+            await strapi.db.query(VEHICLE).updateMany({
+                where : {
+                    user : userId,
+                    isDefault : true,
+                },
+                data : {
+                    isDefault : false,
+                },
+            });
+        }
+
+        const updatedVehicle = await strapi.entityService.update(VEHICLE, vehicle.id, {
+            data : {
+                isDefault : true,
+            },
+            ...vehicleFields,
+        });
+
+        return updatedVehicle;
     },
 
     async delete(ctx) {
@@ -184,6 +232,31 @@ module.exports = createCoreController(VEHICLE, ({ strapi }) => ({
         }
 
         const deletedVehicle = await strapi.entityService.delete(VEHICLE, vehicle.id);
+
+        if (vehicle.isDefault) {
+            const fallbackVehicle = await strapi.query(VEHICLE).findOne({
+                where : {
+                    user : userId,
+                },
+            });
+
+            if (fallbackVehicle) {
+                await strapi.db.query(VEHICLE).updateMany({
+                    where : {
+                        user : userId,
+                    },
+                    data : {
+                        isDefault : false,
+                    },
+                });
+
+                await strapi.entityService.update(VEHICLE, fallbackVehicle.id, {
+                    data : {
+                        isDefault : true,
+                    },
+                });
+            }
+        }
 
         return deletedVehicle;
     },

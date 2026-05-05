@@ -996,6 +996,7 @@ export interface ApiVehicleVehicle extends Schema.CollectionType {
     insuranceExpiration: Attribute.Date;
     insuranceCompany: Attribute.String;
     insuranceCoverPhoto: Attribute.Media;
+    isDefault: Attribute.Boolean & Attribute.DefaultTo<false>;
     user: Attribute.Relation<
       'api::vehicle.vehicle',
       'manyToOne',
