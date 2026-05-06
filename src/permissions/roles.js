@@ -32,7 +32,7 @@ const roles = {
     dispatcher : {
         permissions : {
             [USER] : {
-                auth : ["setBombs_Dispatcher"],
+                auth : ["setBombs_Dispatcher", "logout_Dispatcher", "logout_DispatcherWithReport"],
                 user : ["findCustomer_Dispatcher"],
             },
             [BOMB] : ["find"],
