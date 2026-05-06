@@ -1,4 +1,4 @@
-const { LOAD, USER, CUSTOMER_LEVEL, FISCAL, VEHICLE, FLEET, PROMOTION } = require("../../../constants/models");
+const { LOAD, USER, CUSTOMER_LEVEL, FLEET_LEVEL, FISCAL, VEHICLE, FLEET, PROMOTION } = require("../../../constants/models");
 const { findOneByUuid } = require("../../../helpers");
 const { BadRequestError } = require("../../../helpers/errors");
 
@@ -128,33 +128,69 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         data.customer = customer.id;
 
-        const personalLoads = await strapi.db.query(LOAD).findMany({
-            where : {
-                customer : customer.id,
-                fleet : null,
-            },
-            select : ["quantity"],
-        });
-
-        const totalPersonalLiters = personalLoads.reduce((total, item) => {
-            return total + Number(item.quantity ?? 0);
-        }, 0);
-
         let baseDiscount = FIRST_LOAD_DISCOUNT;
 
-        if ( totalPersonalLiters > 0 ) {
-            const level = await strapi.query(CUSTOMER_LEVEL).findOne({
+        if (data.fleet) {
+            const fleetLoads = await strapi.db.query(LOAD).findMany({
                 where : {
-                    min : {
-                        $lt : totalPersonalLiters,
-                    },
-                    max : {
-                        $gte : totalPersonalLiters,
-                    },
+                    fleet : data.fleet,
                 },
+                select : ["quantity"],
             });
 
-            baseDiscount = toNumber(level?.discount, FIRST_LOAD_DISCOUNT);
+            const totalFleetLiters = fleetLoads.reduce((total, item) => {
+                return total + Number(item.quantity ?? 0);
+            }, 0);
+
+            let fleetLevel;
+
+            if (totalFleetLiters > 0) {
+                fleetLevel = await strapi.query(FLEET_LEVEL).findOne({
+                    where : {
+                        min : {
+                            $lt : totalFleetLiters,
+                        },
+                        max : {
+                            $gte : totalFleetLiters,
+                        },
+                    },
+                });
+            } else {
+                fleetLevel = await strapi.query(FLEET_LEVEL).findOne({
+                    where : {
+                        min : 0,
+                    },
+                });
+            }
+
+            baseDiscount = toNumber(fleetLevel?.discount, FIRST_LOAD_DISCOUNT);
+        } else {
+            const personalLoads = await strapi.db.query(LOAD).findMany({
+                where : {
+                    customer : customer.id,
+                    fleet : null,
+                },
+                select : ["quantity"],
+            });
+
+            const totalPersonalLiters = personalLoads.reduce((total, item) => {
+                return total + Number(item.quantity ?? 0);
+            }, 0);
+
+            if ( totalPersonalLiters > 0 ) {
+                const level = await strapi.query(CUSTOMER_LEVEL).findOne({
+                    where : {
+                        min : {
+                            $lt : totalPersonalLiters,
+                        },
+                        max : {
+                            $gte : totalPersonalLiters,
+                        },
+                    },
+                });
+
+                baseDiscount = toNumber(level?.discount, FIRST_LOAD_DISCOUNT);
+            }
         }
 
         if ( promotionContext?.customer ) {

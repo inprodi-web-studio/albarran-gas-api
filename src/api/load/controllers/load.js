@@ -155,9 +155,9 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
 
     await strapi.service(LOAD).parseCustomer(data);
 
-    await strapi.service(LOAD).assignDiscount(data, promotionContext);
-
     await strapi.service(LOAD).parseFleet(data);
+
+    await strapi.service(LOAD).assignDiscount(data, promotionContext);
 
     let activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
       where: {
