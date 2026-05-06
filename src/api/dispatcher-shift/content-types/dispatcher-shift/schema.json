@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "dispatcher_shifts",
+  "info": {
+    "singularName": "dispatcher-shift",
+    "pluralName": "dispatcher-shifts",
+    "displayName": "Turnos Despachador",
+    "description": "Turnos de sesión de despachadores"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "uuid": {
+      "type": "string"
+    },
+    "dispatcher": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "dispatcherShifts"
+    },
+    "branch": {
+      "type": "string"
+    },
+    "startedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "endedAt": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "active",
+        "closed"
+      ],
+      "default": "active"
+    },
+    "loads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::load.load",
+      "mappedBy": "shift"
+    }
+  }
+}

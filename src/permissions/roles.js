@@ -36,7 +36,7 @@ const roles = {
                 user : ["findCustomer_Dispatcher"],
             },
             [BOMB] : ["find"],
-            [LOAD] : ["getLoads", "assignLoad"],
+            [LOAD] : ["getLoads", "assignLoad", "getCurrentShiftReport"],
             [PROMOTION] : ["resolveForDispatcher"],
         },
         meta : {

@@ -107,6 +107,18 @@
       "target": "api::load.load",
       "mappedBy": "customer"
     },
+    "dispatchedLoads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::load.load",
+      "mappedBy": "dispatcher"
+    },
+    "dispatcherShifts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::dispatcher-shift.dispatcher-shift",
+      "mappedBy": "dispatcher"
+    },
     "branch": {
       "type": "string"
     },

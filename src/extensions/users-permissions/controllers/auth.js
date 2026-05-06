@@ -11,6 +11,7 @@ const {
 const {
     USER,
     BOMB,
+    DISPATCHER_SHIFT,
 } = require("../../../constants/models");
 
 const {
@@ -20,6 +21,44 @@ const {
     generateRandomCode,
 } = require("../../../helpers");
 const { BadRequestError, NotFoundError } = require("../../../helpers/errors");
+
+const closeActiveDispatcherShifts = async (dispatcherId, endedAt = new Date()) => {
+    const activeShifts = await strapi.db.query(DISPATCHER_SHIFT).findMany({
+        where : {
+            dispatcher : dispatcherId,
+            endedAt : null,
+        },
+        select : ["id"],
+    });
+
+    if (!activeShifts.length) {
+        return;
+    }
+
+    await Promise.all(
+        activeShifts.map((shift) =>
+            strapi.entityService.update(DISPATCHER_SHIFT, shift.id, {
+                data : {
+                    endedAt,
+                    status : "closed",
+                },
+            })
+        )
+    );
+};
+
+const startDispatcherShift = async ({ dispatcherId, branch, startedAt = new Date() }) => {
+    await closeActiveDispatcherShifts(dispatcherId, startedAt);
+
+    return strapi.entityService.create(DISPATCHER_SHIFT, {
+        data : {
+            dispatcher : dispatcherId,
+            branch,
+            startedAt,
+            status : "active",
+        },
+    });
+};
 
 module.exports = (plugin) => {
     plugin.controllers.auth["login_Customer"] = async (ctx) => {
@@ -242,6 +281,11 @@ module.exports = (plugin) => {
             },
         });
 
+        const shift = await startDispatcherShift({
+            dispatcherId : dispatcher.id,
+            branch,
+        });
+
         return {
             token     : TOKEN,
             uuid      : dispatcher.uuid,
@@ -249,6 +293,10 @@ module.exports = (plugin) => {
             lastName  : dispatcher.lastName,
             email     : dispatcher.email,
             branch    : branch,
+            shift : {
+                uuid : shift.uuid,
+                startedAt : shift.startedAt,
+            },
         };
     };
 
@@ -308,6 +356,7 @@ module.exports = (plugin) => {
 
     plugin.controllers.auth["logout_Dispatcher"] = async (ctx) => {
         const dispatcher = ctx.state.user;
+        const endedAt = new Date();
 
         const bombs = await strapi.query(BOMB).findMany({
             where : {
@@ -325,8 +374,11 @@ module.exports = (plugin) => {
             },
         });
 
+        await closeActiveDispatcherShifts(dispatcher.id, endedAt);
+
         return {
             message : "success",
+            shiftEndedAt : endedAt.toISOString(),
         };
     };
 };

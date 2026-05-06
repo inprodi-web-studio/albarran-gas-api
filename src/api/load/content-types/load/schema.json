@@ -21,6 +21,18 @@
       "target": "plugin::users-permissions.user",
       "inversedBy": "loads"
     },
+    "dispatcher": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "dispatchedLoads"
+    },
+    "shift": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::dispatcher-shift.dispatcher-shift",
+      "inversedBy": "loads"
+    },
     "product": {
       "type": "string"
     },

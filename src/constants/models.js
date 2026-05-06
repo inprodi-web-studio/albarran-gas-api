@@ -2,6 +2,7 @@ module.exports = {
     USER           : "plugin::users-permissions.user",
     ROLE           : "plugin::users-permissions.role",
     LOAD           : "api::load.load",
+    DISPATCHER_SHIFT : "api::dispatcher-shift.dispatcher-shift",
     BOMB           : "api::bomb.bomb",
     BANNER         : "api::banner.banner",
     FISCAL         : "api::fiscal.fiscal",

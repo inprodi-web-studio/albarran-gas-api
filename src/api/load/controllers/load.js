@@ -1,12 +1,22 @@
 "use strict";
 
-const { LOAD } = require("../../../constants/models");
+const { LOAD, DISPATCHER_SHIFT } = require("../../../constants/models");
 
 const dbConfig = require("../../../../config/customDatabase");
 const { validateAssignLoad } = require("../validation");
 const { findMany } = require("../../../helpers");
 
 const { createCoreController } = require("@strapi/strapi").factories;
+
+const toNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return parsed;
+};
 
 const loadFields = {
   fields: [
@@ -134,6 +144,7 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
   async assignLoad(ctx) {
     const data = ctx.request.body;
     const user = ctx.state.user;
+    const now = new Date();
     const promotionContext = {
       customer: data.customer,
       vehicle: data.vehicle,
@@ -148,14 +159,134 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
 
     await strapi.service(LOAD).parseFleet(data);
 
+    let activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
+      where: {
+        dispatcher: user.id,
+        endedAt: null,
+      },
+      orderBy: {
+        startedAt: "desc",
+      },
+      select: ["id"],
+    });
+
+    if (!activeShift) {
+      activeShift = await strapi.entityService.create(DISPATCHER_SHIFT, {
+        data: {
+          dispatcher: user.id,
+          branch: user.branch,
+          startedAt: now,
+          status: "active",
+        },
+        fields: ["id"],
+      });
+    }
+
     const newLoad = await strapi.entityService.create(LOAD, {
       data: {
         ...data,
         branch: user.branch,
+        dispatcher: user.id,
+        shift: activeShift.id,
       },
       ...loadFields,
     });
 
     return newLoad;
+  },
+
+  async getCurrentShiftReport(ctx) {
+    const user = ctx.state.user;
+
+    const activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
+      where: {
+        dispatcher: user.id,
+        endedAt: null,
+      },
+      orderBy: {
+        startedAt: "desc",
+      },
+      select: ["id", "uuid", "branch", "startedAt", "endedAt", "status"],
+    });
+
+    if (!activeShift) {
+      return {
+        shift: null,
+        loads: [],
+        totals: {
+          loadsCount: 0,
+          totalLiters: 0,
+          subtotal: 0,
+          discountTotal: 0,
+          total: 0,
+        },
+      };
+    }
+
+    const loads = await strapi.db.query(LOAD).findMany({
+      where: {
+        shift: activeShift.id,
+      },
+      orderBy: {
+        date: "desc",
+      },
+      select: ["uuid", "date", "quantity", "price", "discount", "total"],
+    });
+
+    const formattedLoads = loads.map((item) => {
+      const quantity = toNumber(item.quantity);
+      const price = toNumber(item.price);
+      const discount = toNumber(item.discount);
+      const subtotal = quantity * price;
+      const discountTotal = quantity * discount;
+      const total = toNumber(item.total, subtotal - discountTotal);
+
+      return {
+        uuid: item.uuid,
+        date: item.date,
+        quantity: parseFloat(quantity.toFixed(2)),
+        price: parseFloat(price.toFixed(2)),
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        discount: parseFloat(discount.toFixed(2)),
+        discountTotal: parseFloat(discountTotal.toFixed(2)),
+        total: parseFloat(total.toFixed(2)),
+      };
+    });
+
+    const totals = formattedLoads.reduce(
+      (accumulator, item) => {
+        accumulator.loadsCount += 1;
+        accumulator.totalLiters += item.quantity;
+        accumulator.subtotal += item.subtotal;
+        accumulator.discountTotal += item.discountTotal;
+        accumulator.total += item.total;
+        return accumulator;
+      },
+      {
+        loadsCount: 0,
+        totalLiters: 0,
+        subtotal: 0,
+        discountTotal: 0,
+        total: 0,
+      }
+    );
+
+    return {
+      shift: {
+        uuid: activeShift.uuid,
+        branch: activeShift.branch,
+        startedAt: activeShift.startedAt,
+        endedAt: activeShift.endedAt,
+        status: activeShift.status,
+      },
+      loads: formattedLoads,
+      totals: {
+        loadsCount: totals.loadsCount,
+        totalLiters: parseFloat(totals.totalLiters.toFixed(2)),
+        subtotal: parseFloat(totals.subtotal.toFixed(2)),
+        discountTotal: parseFloat(totals.discountTotal.toFixed(2)),
+        total: parseFloat(totals.total.toFixed(2)),
+      },
+    };
   },
 }));

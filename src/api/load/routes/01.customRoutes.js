@@ -7,6 +7,11 @@ module.exports = {
         },
         {
             method : "GET",
+            path : "/dispatcher/loads/shift/current",
+            handler : "load.getCurrentShiftReport",
+        },
+        {
+            method : "GET",
             path : "/dispatcher/loads/:bombId",
             handler : "load.getLoads",
         },
