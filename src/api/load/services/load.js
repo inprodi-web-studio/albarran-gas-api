@@ -218,6 +218,7 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
     async parseFleet(data) {
         const requestedFleet = typeof data.fleet === "string" ? data.fleet.trim() : "";
+        const requestedCustomer = typeof data.customer === "string" ? data.customer.trim() : data.customer;
 
         if (!requestedFleet) {
             data.fleet = null;
@@ -230,7 +231,7 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
             },
             populate : {
                 users : {
-                    fields : ["id"],
+                    fields : ["id", "uuid"],
                 },
             },
         });
@@ -241,7 +242,22 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
             });
         }
 
-        const isCustomerInFleet = Array.isArray(fleet.users) && fleet.users.some((user) => user.id === data.customer);
+        const normalizedCustomerId = Number(requestedCustomer);
+        const hasNumericCustomerId = Number.isFinite(normalizedCustomerId);
+        const isCustomerInFleet = Array.isArray(fleet.users) && fleet.users.some((user) => {
+            const userUuid = typeof user.uuid === "string" ? user.uuid.trim() : "";
+            const userId = Number(user.id);
+
+            if (requestedCustomer && userUuid === requestedCustomer) {
+                return true;
+            }
+
+            if (hasNumericCustomerId && Number.isFinite(userId) && userId === normalizedCustomerId) {
+                return true;
+            }
+
+            return false;
+        });
 
         if (!isCustomerInFleet) {
             throw new BadRequestError("Customer is not part of this fleet.", {
