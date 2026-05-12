@@ -109,6 +109,21 @@ const parseBirthMonthDay = (birthdate) => {
 };
 
 const toNumber = (value) => {
+    if ( typeof value === "string" ) {
+        const trimmed = value.trim();
+
+        if (!trimmed) {
+            return null;
+        }
+
+        const normalized = trimmed.replace(",", ".");
+        const parsedString = Number(normalized);
+
+        if (Number.isFinite(parsedString)) {
+            return parsedString;
+        }
+    }
+
     const parsed = Number(value);
 
     if (!Number.isFinite(parsed)) {
@@ -259,7 +274,7 @@ const evaluatePromotionDiscount = (promotion, quantity) => {
                 } else {
                     let discountValue = value * quantity;
 
-                    if ( maxValue !== null && maxValue !== undefined ) {
+                    if ( maxValue !== null && maxValue !== undefined && maxValue > 0 ) {
                         discountValue = Math.min(discountValue, maxValue);
                     }
 
@@ -274,7 +289,7 @@ const evaluatePromotionDiscount = (promotion, quantity) => {
 
                 let discountValue = value;
 
-                if ( maxValue !== null && maxValue !== undefined ) {
+                if ( maxValue !== null && maxValue !== undefined && maxValue > 0 ) {
                     discountValue = Math.min(discountValue, maxValue);
                 }
 
@@ -419,18 +434,31 @@ module.exports = createCoreService(PROMOTION, ({ strapi }) => ({
             }
         }
 
-        const promotions = await strapi.db.query(PROMOTION).findMany({
-            where : {
+        const promotions = await strapi.entityService.findMany(PROMOTION, {
+            fields : [
+                "id",
+                "uuid",
+                "title",
+                "description",
+                "startsAt",
+                "endsAt",
+                "timezone",
+                "priority",
+                "stackable",
+                "createdAt",
+            ],
+            populate : {
+                conditions : {
+                    fields : ["type", "weekday", "specificDate", "minLiters", "maxLiters", "notes"],
+                },
+                rewards : {
+                    fields : ["type", "value", "maxValue", "notes"],
+                },
+            },
+            filters : {
                 isActive : true,
             },
-            populate : {
-                conditions : true,
-                rewards : true,
-            },
-            orderBy : [
-                { priority : "asc" },
-                { createdAt : "desc" },
-            ],
+            sort : ["priority:asc", "createdAt:desc"],
         });
 
         const customerBirthdate = parseBirthMonthDay(customer.birthdate);
@@ -447,7 +475,7 @@ module.exports = createCoreService(PROMOTION, ({ strapi }) => ({
 
             const conditions = Array.isArray(promotion.conditions) ? promotion.conditions : [];
 
-            const allConditionsMatched = conditions.every((condition) => conditionMatches(condition, {
+            const allConditionsMatched = conditions.length > 0 && conditions.every((condition) => conditionMatches(condition, {
                 dateContext,
                 customerBirthdate,
                 quantity : scanContext.quantity,
@@ -458,6 +486,10 @@ module.exports = createCoreService(PROMOTION, ({ strapi }) => ({
             }
 
             const rewardSummary = evaluatePromotionDiscount(promotion, scanContext.quantity);
+
+            if (rewardSummary.estimatedDiscount <= 0 && rewardSummary.discountPerLiter <= 0 && rewardSummary.fixedDiscount <= 0) {
+                continue;
+            }
 
             candidates.push({
                 promotion,

@@ -18,6 +18,17 @@ const toNumber = (value, fallback = 0) => {
   return parsed;
 };
 
+const calculateNetTotal = (data = {}) => {
+  const quantity = toNumber(data.quantity, 0);
+  const price = toNumber(data.price, 0);
+  const grossTotal = toNumber(data.total, quantity * price);
+  const discountPerLiter = toNumber(data.discount, 0);
+  const discountTotal = quantity * discountPerLiter;
+  const netTotal = Math.max(grossTotal - discountTotal, 0);
+
+  return parseFloat(netTotal.toFixed(2));
+};
+
 const loadFields = {
   fields: [
     "uuid",
@@ -158,6 +169,8 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     await strapi.service(LOAD).parseFleet(data);
 
     await strapi.service(LOAD).assignDiscount(data, promotionContext);
+
+    data.total = calculateNetTotal(data);
 
     let activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
       where: {

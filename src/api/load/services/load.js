@@ -203,14 +203,44 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
             if (promotionResolution?.applies) {
                 const rewardSummary = promotionResolution.promotion?.rewardSummary || {};
-                const promotionDiscountPerLiter = toNumber(
+                const effectiveDiscountPerLiter = toNumber(
                     rewardSummary.effectiveDiscountPerLiter,
-                    toNumber(rewardSummary.discountPerLiter, 0)
+                    0
                 );
+                const directDiscountPerLiter = toNumber(
+                    rewardSummary.discountPerLiter,
+                    0
+                );
+                const promotionDiscountPerLiter = effectiveDiscountPerLiter > 0
+                    ? effectiveDiscountPerLiter
+                    : directDiscountPerLiter;
 
                 data.discount = promotionDiscountPerLiter;
                 return;
             }
+        }
+
+        const normalizedPromotionResolution = await strapi.service(PROMOTION).resolveForDispatcher({
+            customer : customer.uuid,
+            quantity : data.quantity,
+        });
+
+        if (normalizedPromotionResolution?.applies) {
+            const rewardSummary = normalizedPromotionResolution.promotion?.rewardSummary || {};
+            const effectiveDiscountPerLiter = toNumber(
+                rewardSummary.effectiveDiscountPerLiter,
+                0
+            );
+            const directDiscountPerLiter = toNumber(
+                rewardSummary.discountPerLiter,
+                0
+            );
+            const promotionDiscountPerLiter = effectiveDiscountPerLiter > 0
+                ? effectiveDiscountPerLiter
+                : directDiscountPerLiter;
+
+            data.discount = promotionDiscountPerLiter;
+            return;
         }
 
         data.discount = baseDiscount;
