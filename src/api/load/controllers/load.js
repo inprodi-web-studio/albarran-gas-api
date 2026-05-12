@@ -37,6 +37,8 @@ const loadFields = {
     "quantity",
     "total",
     "discount",
+    "promotionUuid",
+    "promotionTitle",
     "date",
     "branch",
   ],

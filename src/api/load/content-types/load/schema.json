@@ -48,6 +48,12 @@
     "discount": {
       "type": "float"
     },
+    "promotionUuid": {
+      "type": "string"
+    },
+    "promotionTitle": {
+      "type": "string"
+    },
     "date": {
       "type": "string"
     },

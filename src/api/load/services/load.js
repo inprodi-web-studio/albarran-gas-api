@@ -16,6 +16,21 @@ const toNumber = (value, fallback = 0) => {
     return parsed;
 };
 
+const getPromotionDiscountPerLiter = (rewardSummary = {}) => {
+    const effectiveDiscountPerLiter = toNumber(
+        rewardSummary.effectiveDiscountPerLiter,
+        0
+    );
+    const directDiscountPerLiter = toNumber(
+        rewardSummary.discountPerLiter,
+        0
+    );
+
+    return effectiveDiscountPerLiter > 0
+        ? effectiveDiscountPerLiter
+        : directDiscountPerLiter;
+};
+
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
         const personalLoads = await strapi.db.query(LOAD).findMany({
@@ -127,6 +142,8 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         const customer = await findOneByUuid( data.customer, USER );
 
         data.customer = customer.id;
+        data.promotionUuid = null;
+        data.promotionTitle = null;
 
         let baseDiscount = FIRST_LOAD_DISCOUNT;
 
@@ -203,19 +220,11 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
             if (promotionResolution?.applies) {
                 const rewardSummary = promotionResolution.promotion?.rewardSummary || {};
-                const effectiveDiscountPerLiter = toNumber(
-                    rewardSummary.effectiveDiscountPerLiter,
-                    0
-                );
-                const directDiscountPerLiter = toNumber(
-                    rewardSummary.discountPerLiter,
-                    0
-                );
-                const promotionDiscountPerLiter = effectiveDiscountPerLiter > 0
-                    ? effectiveDiscountPerLiter
-                    : directDiscountPerLiter;
+                const promotionDiscountPerLiter = getPromotionDiscountPerLiter(rewardSummary);
 
                 data.discount = promotionDiscountPerLiter;
+                data.promotionUuid = promotionResolution.promotion?.uuid ?? null;
+                data.promotionTitle = promotionResolution.promotion?.title ?? null;
                 return;
             }
         }
@@ -227,19 +236,11 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
 
         if (normalizedPromotionResolution?.applies) {
             const rewardSummary = normalizedPromotionResolution.promotion?.rewardSummary || {};
-            const effectiveDiscountPerLiter = toNumber(
-                rewardSummary.effectiveDiscountPerLiter,
-                0
-            );
-            const directDiscountPerLiter = toNumber(
-                rewardSummary.discountPerLiter,
-                0
-            );
-            const promotionDiscountPerLiter = effectiveDiscountPerLiter > 0
-                ? effectiveDiscountPerLiter
-                : directDiscountPerLiter;
+            const promotionDiscountPerLiter = getPromotionDiscountPerLiter(rewardSummary);
 
             data.discount = promotionDiscountPerLiter;
+            data.promotionUuid = normalizedPromotionResolution.promotion?.uuid ?? null;
+            data.promotionTitle = normalizedPromotionResolution.promotion?.title ?? null;
             return;
         }
 
