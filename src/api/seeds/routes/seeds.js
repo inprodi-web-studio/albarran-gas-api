@@ -9,5 +9,14 @@ module.exports = {
             auth: false,
           },
       },
+      {
+        method: "POST",
+        path: "/seeds/admin-demo",
+        handler: "seeds.generateAdminDemoSeeds",
+        config: {
+            policies: [],
+            auth: false,
+          },
+      },
     ],
 };

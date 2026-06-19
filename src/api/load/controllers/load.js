@@ -5,6 +5,7 @@ const { LOAD, DISPATCHER_SHIFT } = require("../../../constants/models");
 const dbConfig = require("../../../../config/customDatabase");
 const { validateAssignLoad } = require("../validation");
 const { findMany } = require("../../../helpers");
+const { ConflictError } = require("../../../helpers/errors");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
@@ -29,6 +30,134 @@ const calculateNetTotal = (data = {}) => {
   return parseFloat(netTotal.toFixed(2));
 };
 
+const normalizeExternalValue = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const normalized = value.toString().trim();
+
+  if (!normalized || normalized === "null") {
+    return null;
+  }
+
+  return normalized;
+};
+
+const normalizeExternalDate = (value) => {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return normalizeExternalValue(value);
+};
+
+const buildExternalLoadKey = ({ branch, externalBombId, externalLoadId }) => {
+  const normalizedBranch = normalizeExternalValue(branch);
+  const normalizedBombId = normalizeExternalValue(externalBombId);
+  const normalizedLoadId = normalizeExternalValue(externalLoadId);
+
+  if (!normalizedBranch || !normalizedBombId || !normalizedLoadId) {
+    return null;
+  }
+
+  return `${normalizedBranch}:${normalizedBombId}:${normalizedLoadId}`;
+};
+
+const isUniqueConstraintError = (error) => {
+  const message = `${error?.message ?? ""} ${error?.details?.message ?? ""}`;
+
+  return /unique|duplicate|constraint|ER_DUP_ENTRY/i.test(message);
+};
+
+const findAssignedLoad = async (
+  strapi,
+  { branch, externalLoadKey, externalLoadId, externalBombId, quantity, price, date }
+) => {
+  const normalizedBranch = normalizeExternalValue(branch);
+  const normalizedLoadKey = normalizeExternalValue(externalLoadKey);
+  const normalizedLoadId = normalizeExternalValue(externalLoadId);
+  const normalizedBombId = normalizeExternalValue(externalBombId);
+  const normalizedDate = normalizeExternalDate(date);
+
+  if (!normalizedBranch) {
+    return null;
+  }
+
+  if (normalizedLoadKey) {
+    const assignedLoad = await strapi.db.query(LOAD).findOne({
+      where: {
+        branch: normalizedBranch,
+        externalLoadKey: normalizedLoadKey,
+      },
+      select: ["uuid"],
+    });
+
+    if (assignedLoad) {
+      return assignedLoad;
+    }
+  }
+
+  if (normalizedLoadId) {
+    const assignedLoad = await strapi.db.query(LOAD).findOne({
+      where: {
+        branch: normalizedBranch,
+        externalLoadId: normalizedLoadId,
+        ...(normalizedBombId && { externalBombId: normalizedBombId }),
+      },
+      select: ["uuid"],
+    });
+
+    if (assignedLoad) {
+      return assignedLoad;
+    }
+  }
+
+  if (normalizedDate) {
+    return strapi.db.query(LOAD).findOne({
+      where: {
+        branch: normalizedBranch,
+        date: normalizedDate,
+        quantity: toNumber(quantity, 0),
+        price: toNumber(price, 0),
+      },
+      select: ["uuid"],
+    });
+  }
+
+  return null;
+};
+
+const addAssignmentStatus = async (strapi, load, { branch, bombId }) => {
+  if (!load) {
+    return load;
+  }
+
+  const externalLoadId = normalizeExternalValue(load.lognew);
+  const externalBombId = normalizeExternalValue(load.nrobom ?? bombId);
+  const externalLoadKey = buildExternalLoadKey({
+    branch,
+    externalBombId,
+    externalLoadId,
+  });
+  const assignedLoad = await findAssignedLoad(strapi, {
+    branch,
+    externalLoadKey,
+    externalLoadId,
+    externalBombId,
+    quantity: load.can,
+    price: load.pre,
+    date: load.datetime_combined,
+  });
+
+  return {
+    ...load,
+    nrobom: Number(externalBombId ?? bombId),
+    assigned: Boolean(assignedLoad),
+    assignedLoadUuid: assignedLoad?.uuid ?? null,
+  };
+};
+
 const loadFields = {
   fields: [
     "uuid",
@@ -39,6 +168,9 @@ const loadFields = {
     "discount",
     "promotionUuid",
     "promotionTitle",
+    "externalLoadKey",
+    "externalLoadId",
+    "externalBombId",
     "date",
     "branch",
   ],
@@ -99,29 +231,15 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
             knex.raw(
               "CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"
             ),
-            "lognew"
+            "lognew",
+            "nrobom"
           )
           .where("nrobom", bombId)
           .orderBy("lognew", "desc")
           .first()
           .timeout(60000);
 
-        if (lastLoad) {
-          const conflictLoad = await strapi.query(LOAD).findOne({
-            where: {
-              quantity: lastLoad?.can,
-              price: lastLoad?.pre,
-              total: lastLoad?.mto,
-              date: lastLoad?.datetime_combined.toISOString(),
-            },
-          });
-
-          if (conflictLoad) {
-            return null;
-          }
-        }
-
-        return lastLoad;
+        return addAssignmentStatus(strapi, lastLoad, { branch, bombId });
       }
 
       const loads = await knex("Despachos")
@@ -137,7 +255,8 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
           knex.raw(
             "CAST(DATEADD(day, fchtrn - 2, '1900-01-01') AS DATETIME) + CAST(RIGHT('0' + CAST(hratrn / 100 AS VARCHAR(2)), 2) + ':' + RIGHT('0' + CAST(hratrn % 100 AS VARCHAR(2)), 2) AS DATETIME) AS datetime_combined"
           ),
-          "lognew"
+          "lognew",
+          "nrobom"
         )
         .where("nrobom", bombId)
         .orderBy("lognew", "desc")
@@ -158,6 +277,13 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     const data = ctx.request.body;
     const user = ctx.state.user;
     const now = new Date();
+    const externalLoadId = normalizeExternalValue(data.externalLoadId);
+    const externalBombId = normalizeExternalValue(data.externalBombId);
+    const externalLoadKey = buildExternalLoadKey({
+      branch: user.branch,
+      externalBombId,
+      externalLoadId,
+    });
     const promotionContext = {
       customer: data.customer,
       vehicle: data.vehicle,
@@ -166,6 +292,22 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
 
     await validateAssignLoad(data);
 
+    const assignedLoad = await findAssignedLoad(strapi, {
+      branch: user.branch,
+      externalLoadKey,
+      externalLoadId,
+      externalBombId,
+      quantity: data.quantity,
+      price: data.price,
+      date: data.date,
+    });
+
+    if (assignedLoad) {
+      throw new ConflictError("Load already assigned.", {
+        key: "load.alreadyAssigned",
+      });
+    }
+
     await strapi.service(LOAD).parseCustomer(data);
 
     await strapi.service(LOAD).parseFleet(data);
@@ -173,6 +315,9 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     await strapi.service(LOAD).assignDiscount(data, promotionContext);
 
     data.total = calculateNetTotal(data);
+    data.externalLoadId = externalLoadId;
+    data.externalBombId = externalBombId;
+    data.externalLoadKey = externalLoadKey;
 
     let activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
       where: {
@@ -197,15 +342,27 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
       });
     }
 
-    const newLoad = await strapi.entityService.create(LOAD, {
-      data: {
-        ...data,
-        branch: user.branch,
-        dispatcher: user.id,
-        shift: activeShift.id,
-      },
-      ...loadFields,
-    });
+    let newLoad;
+
+    try {
+      newLoad = await strapi.entityService.create(LOAD, {
+        data: {
+          ...data,
+          branch: user.branch,
+          dispatcher: user.id,
+          shift: activeShift.id,
+        },
+        ...loadFields,
+      });
+    } catch (error) {
+      if (externalLoadKey && isUniqueConstraintError(error)) {
+        throw new ConflictError("Load already assigned.", {
+          key: "load.alreadyAssigned",
+        });
+      }
+
+      throw error;
+    }
 
     return newLoad;
   },

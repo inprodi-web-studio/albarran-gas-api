@@ -1,4 +1,4 @@
-const models = require("../constants/models");
+const models = { ...require("../constants/models") };
 const roles  = require("./roles");
 
 delete models.ROLE;

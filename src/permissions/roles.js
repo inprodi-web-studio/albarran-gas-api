@@ -1,10 +1,10 @@
-const { USER, BOMB, LOAD, BANNER, VEHICLE, FLEET, PROMOTION } = require("../constants/models");
+const { USER, BOMB, LOAD, BANNER, VEHICLE, FLEET, PROMOTION, ADMIN_REPORT, ADMIN_PROMOTION, ADMIN_BANNER } = require("../constants/models");
 
 const roles = {
     public : {
         permissions : {
             [USER] : {
-                auth : ["login_Customer", "login_Dispatcher", "register_Customer", "validateCode_Customer", "forgotPassword_Customer"],
+                auth : ["login_Customer", "login_Dispatcher", "login_Admin", "register_Customer", "validateCode_Customer", "forgotPassword_Customer"],
             },
         },
         meta : {
@@ -51,6 +51,17 @@ const roles = {
         meta : {
             type        : "super-admin",
             description : "super-admin",
+        },
+    },
+    admin : {
+        permissions : {
+            [ADMIN_REPORT] : ["getOptions", "getLoads", "getDiscounts", "getInvoices", "getCustomers", "getShiftReports", "downloadShiftReportPdf"],
+            [ADMIN_PROMOTION] : ["find", "findOne", "create", "update", "delete"],
+            [ADMIN_BANNER] : ["find", "create", "update", "delete"],
+        },
+        meta : {
+            type        : "admin",
+            description : "admin",
         },
     },
 };

@@ -9,6 +9,8 @@ const assignLoadSchema = yup.object().shape({
     price : yup.number().min(0).required(),
     total : yup.number().min(0).required(),
     date : yup.string().required(),
+    externalLoadId : yup.string().nullable(),
+    externalBombId : yup.number().integer().nullable(),
 }).noUnknown().strict();
 
 

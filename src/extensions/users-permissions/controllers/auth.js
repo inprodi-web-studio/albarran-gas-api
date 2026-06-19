@@ -12,9 +12,7 @@ const {
     USER,
     BOMB,
     DISPATCHER_SHIFT,
-    LOAD,
 } = require("../../../constants/models");
-const PDFDocument = require("pdfkit");
 
 const {
     findOneByAny,
@@ -23,30 +21,11 @@ const {
     generateRandomCode,
 } = require("../../../helpers");
 const { BadRequestError, NotFoundError } = require("../../../helpers/errors");
-
-const toNumber = (value, fallback = 0) => {
-    const parsed = Number(value);
-
-    if (!Number.isFinite(parsed)) {
-        return fallback;
-    }
-
-    return parsed;
-};
-
-const formatDateTime = (value) => {
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-        return "-";
-    }
-
-    const pad = (number) => String(number).padStart(2, "0");
-
-    return `${pad(parsed.getDate())}/${pad(parsed.getMonth() + 1)}/${parsed.getFullYear()} ${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
-};
-
-const formatMoney = (value) => `$${toNumber(value).toFixed(2)}`;
+const {
+    buildShiftReportFileName,
+    buildShiftReportPdf,
+    getShiftLoads,
+} = require("../../../helpers/shiftReport");
 
 const closeActiveDispatcherShifts = async (dispatcherId, endedAt = new Date()) => {
     const activeShifts = await strapi.db.query(DISPATCHER_SHIFT).findMany({
@@ -125,157 +104,6 @@ const clearDispatcherBranch = async (dispatcherId) =>
             branch : null,
         },
     });
-
-const getShiftLoads = async (shiftId) => {
-    const loads = await strapi.db.query(LOAD).findMany({
-        where : {
-            shift : shiftId,
-        },
-        select : ["date", "quantity", "price", "discount", "total"],
-        orderBy : {
-            date : "asc",
-        },
-    });
-
-    return loads.map((item) => {
-        const quantity = toNumber(item.quantity);
-        const price = toNumber(item.price);
-        const discount = toNumber(item.discount);
-        const subtotal = quantity * price;
-        const discountTotal = discount * quantity;
-        const total = toNumber(item.total, subtotal - discountTotal);
-
-        return {
-            date : item.date,
-            quantity,
-            price,
-            subtotal,
-            discount,
-            discountTotal,
-            total,
-        };
-    });
-};
-
-const buildShiftReportPdf = async ({
-    dispatcher,
-    shift,
-    loads,
-}) => {
-    const doc = new PDFDocument({
-        size : "A4",
-        margin : 36,
-    });
-    const chunks = [];
-
-    doc.on("data", (chunk) => chunks.push(chunk));
-
-    const done = new Promise((resolve) => {
-        doc.on("end", () => resolve(Buffer.concat(chunks)));
-    });
-
-    doc.fontSize(14).text("Corte de Despachos por Turno", { align : "left" });
-    doc.moveDown(0.4);
-    doc.fontSize(10).text(`Despachador: ${dispatcher.name} ${dispatcher.lastName}`);
-    doc.text(`Sucursal: ${shift.branch || "-"}`);
-    doc.text(`Inicio de turno: ${formatDateTime(shift.startedAt)}`);
-    doc.text(`Fin de turno: ${formatDateTime(shift.endedAt)}`);
-    doc.moveDown(0.6);
-
-    const columns = [
-        { key : "date", title : "Hora del despacho", width : 90, align : "left" },
-        { key : "quantity", title : "Litros", width : 60, align : "right" },
-        { key : "price", title : "Precio", width : 58, align : "right" },
-        { key : "subtotal", title : "Subtotal", width : 66, align : "right" },
-        { key : "discount", title : "Descuento/litro", width : 82, align : "right" },
-        { key : "discountTotal", title : "Descuento total", width : 78, align : "right" },
-        { key : "total", title : "Total", width : 58, align : "right" },
-    ];
-
-    const startX = doc.page.margins.left;
-    const headerY = doc.y;
-
-    let cursorX = startX;
-    doc.fontSize(9).font("Helvetica-Bold");
-    columns.forEach((column) => {
-        doc.text(column.title, cursorX, headerY, {
-            width : column.width,
-            align : column.align,
-        });
-        cursorX += column.width;
-    });
-
-    let rowY = headerY + 16;
-    doc.moveTo(startX, rowY - 4).lineTo(startX + columns.reduce((total, column) => total + column.width, 0), rowY - 4).stroke();
-
-    doc.font("Helvetica");
-    loads.forEach((row) => {
-        if (rowY > doc.page.height - doc.page.margins.bottom - 40) {
-            doc.addPage();
-            rowY = doc.page.margins.top;
-            cursorX = startX;
-            doc.fontSize(9).font("Helvetica-Bold");
-            columns.forEach((column) => {
-                doc.text(column.title, cursorX, rowY, {
-                    width : column.width,
-                    align : column.align,
-                });
-                cursorX += column.width;
-            });
-            rowY += 16;
-            doc.moveTo(startX, rowY - 4).lineTo(startX + columns.reduce((total, column) => total + column.width, 0), rowY - 4).stroke();
-            doc.font("Helvetica");
-        }
-
-        const normalizedRow = {
-            date : formatDateTime(row.date),
-            quantity : row.quantity.toFixed(2),
-            price : formatMoney(row.price),
-            subtotal : formatMoney(row.subtotal),
-            discount : formatMoney(row.discount),
-            discountTotal : formatMoney(row.discountTotal),
-            total : formatMoney(row.total),
-        };
-
-        cursorX = startX;
-        columns.forEach((column) => {
-            doc.text(normalizedRow[column.key], cursorX, rowY, {
-                width : column.width,
-                align : column.align,
-            });
-            cursorX += column.width;
-        });
-
-        rowY += 15;
-    });
-
-    const totals = loads.reduce((accumulator, row) => {
-        accumulator.quantity += row.quantity;
-        accumulator.subtotal += row.subtotal;
-        accumulator.discountTotal += row.discountTotal;
-        accumulator.total += row.total;
-        return accumulator;
-    }, {
-        quantity : 0,
-        subtotal : 0,
-        discountTotal : 0,
-        total : 0,
-    });
-
-    rowY += 4;
-    doc.moveTo(startX, rowY).lineTo(startX + columns.reduce((total, column) => total + column.width, 0), rowY).stroke();
-    rowY += 6;
-    doc.font("Helvetica-Bold").fontSize(10);
-    doc.text(
-        `Totales -> Litros: ${totals.quantity.toFixed(2)} | Subtotal: ${formatMoney(totals.subtotal)} | Descuento total: ${formatMoney(totals.discountTotal)} | Total: ${formatMoney(totals.total)}`,
-        startX,
-        rowY
-    );
-
-    doc.end();
-
-    return done;
-};
 
 const performDispatcherLogout = async ({ dispatcher, endedAt = new Date() }) => {
     await clearDispatcherBombs(dispatcher.id);
@@ -523,6 +351,40 @@ module.exports = (plugin) => {
         };
     };
 
+    plugin.controllers.auth["login_Admin"] = async (ctx) => {
+        const data = ctx.request.body;
+
+        await validateLogin(data);
+
+        const {
+            email,
+            password,
+        } = data;
+
+        const admin = await findOneByAny(email, USER, "email");
+
+        if (admin.type !== "admin") {
+            throw new NotFoundError("Admin not found", {
+                key : "auth.adminNotFound",
+                path : ctx.request.path,
+            });
+        }
+
+        await plugin.services.validateUserContext(password, admin);
+
+        const TOKEN = generateToken({
+            id : admin.id,
+        });
+
+        return {
+            token    : TOKEN,
+            uuid     : admin.uuid,
+            name     : admin.name,
+            lastName : admin.lastName,
+            email    : admin.email,
+        };
+    };
+
     plugin.controllers.auth["setBombs_Dispatcher"] = async (ctx) => {
         const data = ctx.request.body;
         const dispatcher = ctx.state.user;
@@ -615,12 +477,10 @@ module.exports = (plugin) => {
         await clearDispatcherBombs(dispatcher.id);
         await clearDispatcherBranch(dispatcher.id);
 
-        const safeName = `${dispatcher.name || "despachador"}_${dispatcher.lastName || ""}`
-            .trim()
-            .replace(/\s+/g, "_")
-            .replace(/[^a-zA-Z0-9_]/g, "")
-            .toLowerCase();
-        const fileName = `corte_turno_${safeName || "despachador"}_${endedAt.toISOString().slice(0, 19).replace(/[:T]/g, "-")}.pdf`;
+        const fileName = buildShiftReportFileName({
+            dispatcher,
+            shift : closedShift,
+        });
 
         ctx.status = 200;
         ctx.set("Content-Type", "application/pdf");

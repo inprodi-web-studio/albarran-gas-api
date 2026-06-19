@@ -54,6 +54,16 @@
     "promotionTitle": {
       "type": "string"
     },
+    "externalLoadKey": {
+      "type": "string",
+      "unique": true
+    },
+    "externalLoadId": {
+      "type": "string"
+    },
+    "externalBombId": {
+      "type": "string"
+    },
     "date": {
       "type": "string"
     },

@@ -11,4 +11,7 @@ module.exports = {
     CUSTOMER_LEVEL : "api::customer-level.customer-level",
     FLEET_LEVEL    : "api::fleet-level.fleet-level",
     PROMOTION      : "api::promotion.promotion",
+    ADMIN_REPORT   : "api::admin-report.admin-report",
+    ADMIN_PROMOTION : "api::admin-promotion.admin-promotion",
+    ADMIN_BANNER   : "api::admin-banner.admin-banner",
 }

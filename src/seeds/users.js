@@ -109,6 +109,38 @@ const generateUsers = async (strapi) => {
             },
         });
     });
+
+
+    // -------------------------------------------- ADMINS -------------------------------------------------
+
+
+    const { id : ADMIN_ROLE } = await strapi.query("plugin::users-permissions.role").findOne({
+        where : {
+            name : "admin",
+        },
+    });
+
+    const mainAdmin = await strapi.query( USER ).findOne({
+        where : {
+            email : "admin@inprodi.com.mx",
+        },
+    });
+
+    if ( !mainAdmin?.id ) {
+        await strapi.entityService.create( USER, {
+            data : {
+                username  : "admin@inprodi.com.mx",
+                email     : "admin@inprodi.com.mx",
+                name      : "Inprodi",
+                lastName  : "Admin",
+                password  : "Asdf123456",
+                type      : "admin",
+                confirmed : true,
+                blocked   : false,
+                role      : ADMIN_ROLE,
+            },
+        });
+    }
 };
 
 module.exports = generateUsers;

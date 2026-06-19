@@ -55,6 +55,15 @@ module.exports = ( plugin ) => {
 
     plugin.routes["content-api"].routes.push({
         method  : "POST",
+        path    : "/admin/auth/login",
+        handler : "auth.login_Admin",
+        config  : {
+            prefix : "",
+        },
+    });
+
+    plugin.routes["content-api"].routes.push({
+        method  : "POST",
         path    : "/dispatcher/auth/logout",
         handler : "auth.logout_Dispatcher",
         config  : {

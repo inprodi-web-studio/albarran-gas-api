@@ -768,6 +768,16 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'oneToMany',
       'api::load.load'
     >;
+    dispatchedLoads: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::load.load'
+    >;
+    dispatcherShifts: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::dispatcher-shift.dispatcher-shift'
+    >;
     branch: Attribute.String;
     fiscals: Attribute.Relation<
       'plugin::users-permissions.user',
@@ -778,6 +788,16 @@ export interface PluginUsersPermissionsUser extends Schema.CollectionType {
       'plugin::users-permissions.user',
       'oneToMany',
       'api::vehicle.vehicle'
+    >;
+    fleetsOwned: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'oneToMany',
+      'api::fleet.fleet'
+    >;
+    fleets: Attribute.Relation<
+      'plugin::users-permissions.user',
+      'manyToMany',
+      'api::fleet.fleet'
     >;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
@@ -890,6 +910,52 @@ export interface ApiCustomerLevelCustomerLevel extends Schema.CollectionType {
   };
 }
 
+export interface ApiDispatcherShiftDispatcherShift
+  extends Schema.CollectionType {
+  collectionName: 'dispatcher_shifts';
+  info: {
+    singularName: 'dispatcher-shift';
+    pluralName: 'dispatcher-shifts';
+    displayName: 'Turnos Despachador';
+    description: 'Turnos de sesi\u00F3n de despachadores';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    dispatcher: Attribute.Relation<
+      'api::dispatcher-shift.dispatcher-shift',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    branch: Attribute.String;
+    startedAt: Attribute.DateTime & Attribute.Required;
+    endedAt: Attribute.DateTime;
+    status: Attribute.Enumeration<['active', 'closed']> &
+      Attribute.DefaultTo<'active'>;
+    loads: Attribute.Relation<
+      'api::dispatcher-shift.dispatcher-shift',
+      'oneToMany',
+      'api::load.load'
+    >;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::dispatcher-shift.dispatcher-shift',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::dispatcher-shift.dispatcher-shift',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiFiscalFiscal extends Schema.CollectionType {
   collectionName: 'fiscals';
   info: {
@@ -929,6 +995,93 @@ export interface ApiFiscalFiscal extends Schema.CollectionType {
   };
 }
 
+export interface ApiFleetFleet extends Schema.CollectionType {
+  collectionName: 'fleets';
+  info: {
+    singularName: 'fleet';
+    pluralName: 'fleets';
+    displayName: 'Flotillas';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    name: Attribute.String & Attribute.Required;
+    code: Attribute.String &
+      Attribute.Required &
+      Attribute.Unique &
+      Attribute.SetMinMaxLength<{
+        minLength: 10;
+        maxLength: 10;
+      }>;
+    owner: Attribute.Relation<
+      'api::fleet.fleet',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    users: Attribute.Relation<
+      'api::fleet.fleet',
+      'manyToMany',
+      'plugin::users-permissions.user'
+    >;
+    loads: Attribute.Relation<
+      'api::fleet.fleet',
+      'oneToMany',
+      'api::load.load'
+    >;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::fleet.fleet',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::fleet.fleet',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
+export interface ApiFleetLevelFleetLevel extends Schema.CollectionType {
+  collectionName: 'fleet_levels';
+  info: {
+    singularName: 'fleet-level';
+    pluralName: 'fleet-levels';
+    displayName: 'Niveles de Flotilla';
+    description: '';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    name: Attribute.String;
+    min: Attribute.Decimal;
+    max: Attribute.Decimal;
+    discount: Attribute.Decimal;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::fleet-level.fleet-level',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::fleet-level.fleet-level',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiLoadLoad extends Schema.CollectionType {
   collectionName: 'loads';
   info: {
@@ -947,11 +1100,23 @@ export interface ApiLoadLoad extends Schema.CollectionType {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+    dispatcher: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    shift: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'api::dispatcher-shift.dispatcher-shift'
+    >;
     product: Attribute.String;
     quantity: Attribute.Float;
     price: Attribute.Float;
     total: Attribute.Float;
     discount: Attribute.Float;
+    promotionUuid: Attribute.String;
+    promotionTitle: Attribute.String;
     date: Attribute.String;
     fiscal: Attribute.Relation<
       'api::load.load',
@@ -963,12 +1128,67 @@ export interface ApiLoadLoad extends Schema.CollectionType {
       'manyToOne',
       'api::vehicle.vehicle'
     >;
+    fleet: Attribute.Relation<
+      'api::load.load',
+      'manyToOne',
+      'api::fleet.fleet'
+    >;
     branch: Attribute.String;
     createdAt: Attribute.DateTime;
     updatedAt: Attribute.DateTime;
     createdBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
       Attribute.Private;
     updatedBy: Attribute.Relation<'api::load.load', 'oneToOne', 'admin::user'> &
+      Attribute.Private;
+  };
+}
+
+export interface ApiPromotionPromotion extends Schema.CollectionType {
+  collectionName: 'promotions';
+  info: {
+    singularName: 'promotion';
+    pluralName: 'promotions';
+    displayName: 'Promociones';
+    description: 'Promociones configurables con reglas de vigencia, condiciones y beneficios.';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    uuid: Attribute.String;
+    title: Attribute.String & Attribute.Required;
+    description: Attribute.Text;
+    isActive: Attribute.Boolean &
+      Attribute.Required &
+      Attribute.DefaultTo<true>;
+    startsAt: Attribute.Date & Attribute.Required;
+    endsAt: Attribute.Date;
+    timezone: Attribute.String & Attribute.DefaultTo<'America/Mexico_City'>;
+    priority: Attribute.Integer & Attribute.DefaultTo<100>;
+    stackable: Attribute.Boolean & Attribute.DefaultTo<false>;
+    conditions: Attribute.Component<'promotion.condition', true> &
+      Attribute.Required &
+      Attribute.SetMinMax<{
+        min: 1;
+      }>;
+    rewards: Attribute.Component<'promotion.reward', true> &
+      Attribute.Required &
+      Attribute.SetMinMax<{
+        min: 1;
+      }>;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::promotion.promotion',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::promotion.promotion',
+      'oneToOne',
+      'admin::user'
+    > &
       Attribute.Private;
   };
 }
@@ -1040,8 +1260,12 @@ declare module '@strapi/types' {
       'api::banner.banner': ApiBannerBanner;
       'api::bomb.bomb': ApiBombBomb;
       'api::customer-level.customer-level': ApiCustomerLevelCustomerLevel;
+      'api::dispatcher-shift.dispatcher-shift': ApiDispatcherShiftDispatcherShift;
       'api::fiscal.fiscal': ApiFiscalFiscal;
+      'api::fleet.fleet': ApiFleetFleet;
+      'api::fleet-level.fleet-level': ApiFleetLevelFleetLevel;
       'api::load.load': ApiLoadLoad;
+      'api::promotion.promotion': ApiPromotionPromotion;
       'api::vehicle.vehicle': ApiVehicleVehicle;
     }
   }
