@@ -29,4 +29,5 @@ const createVehicleSchema = yup.object().shape({
 
 module.exports = {
     validateCreateVehicle : validateYupSchema(createVehicleSchema),
+    validateUpdateVehicle : validateYupSchema(createVehicleSchema),
 };

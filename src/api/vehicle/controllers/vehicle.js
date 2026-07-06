@@ -1,7 +1,7 @@
 const { VEHICLE } = require("../../../constants/models");
 const { findMany } = require("../../../helpers");
 const { BadRequestError, ConflictError, NotFoundError } = require("../../../helpers/errors");
-const { validateCreateVehicle } = require("../validation");
+const { validateCreateVehicle, validateUpdateVehicle } = require("../validation");
 
 const { createCoreController } = require("@strapi/strapi").factories;
 
@@ -72,7 +72,7 @@ const vehicleFields = {
     ],
     populate : {
         insuranceCoverPhoto : {
-            fields : ["url", "name"],
+            fields : ["id", "url", "name"],
         },
     },
 };
@@ -171,6 +171,80 @@ module.exports = createCoreController(VEHICLE, ({ strapi }) => ({
         });
 
         return newVehicle;
+    },
+
+    async update(ctx) {
+        const { id: uuid } = ctx.params;
+        const { id: userId } = ctx.state.user;
+        const data = normalizeVehicleData(ctx.request.body);
+
+        const vehicle = await strapi.query(VEHICLE).findOne({
+            where : {
+                uuid,
+                user : userId,
+            },
+            populate : {
+                insuranceCoverPhoto : {
+                    select : ["id"],
+                },
+            },
+        });
+
+        if (!vehicle) {
+            throw new NotFoundError("Vehicle not found.", {
+                key : "vehicle.notFound",
+                path : ctx.request.path,
+            });
+        }
+
+        if (data.insurancePolicy && !data.insuranceCoverPhoto && vehicle.insuranceCoverPhoto?.id) {
+            data.insuranceCoverPhoto = vehicle.insuranceCoverPhoto.id;
+        }
+
+        await validateUpdateVehicle(data);
+
+        const duplicatedPlates = await strapi.query(VEHICLE).count({
+            where : {
+                user : userId,
+                plates : data.plates,
+                id : {
+                    $ne : vehicle.id,
+                },
+            },
+        });
+
+        if (duplicatedPlates > 0) {
+            throw new ConflictError("Vehicle already exists with these plates.", {
+                key : "vehicle.duplicatedPlates",
+                path : ctx.request.path,
+            });
+        }
+
+        if (data.insurancePolicy) {
+            const duplicatedInsurancePolicy = await strapi.query(VEHICLE).count({
+                where : {
+                    user : userId,
+                    insurancePolicy : data.insurancePolicy,
+                    id : {
+                        $ne : vehicle.id,
+                    },
+                },
+            });
+
+            if (duplicatedInsurancePolicy > 0) {
+                throw new ConflictError("Vehicle already exists with this insurance policy.", {
+                    key : "vehicle.duplicatedInsurancePolicy",
+                    path : ctx.request.path,
+                });
+            }
+        }
+
+        const updatedVehicle = await strapi.entityService.update(VEHICLE, vehicle.id, {
+            data,
+            ...vehicleFields,
+        });
+
+        return updatedVehicle;
     },
 
     async setDefault(ctx) {

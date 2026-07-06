@@ -33,6 +33,12 @@ const getPromotionDiscountPerLiter = (rewardSummary = {}) => {
 
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
+        const allLoads = await strapi.db.query(LOAD).findMany({
+            where : {
+                customer : customerId,
+            },
+            select : ["quantity", "discount"],
+        });
         const personalLoads = await strapi.db.query(LOAD).findMany({
             where : {
                 customer : customerId,
@@ -41,11 +47,19 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
             select : ["quantity", "discount"],
         });
 
+        const totalLiters = allLoads.reduce((total, item) => {
+            return total + Number(item.quantity ?? 0);
+        }, 0);
+
+        const totalDiscount = allLoads.reduce((total, item) => {
+            return total + (Number(item.discount ?? 0) * Number(item.quantity ?? 0));
+        }, 0);
+
         const totalPersonalLiters = personalLoads.reduce((total, item) => {
             return total + Number(item.quantity ?? 0);
         }, 0);
 
-        const totalDiscount = personalLoads.reduce((total, item) => {
+        const totalPersonalDiscount = personalLoads.reduce((total, item) => {
             return total + (Number(item.discount ?? 0) * Number(item.quantity ?? 0));
         }, 0);
 
@@ -73,8 +87,10 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
         }
 
         return {
-            total : parseFloat( totalPersonalLiters.toFixed(2) ) || 0,
+            total : parseFloat( totalLiters.toFixed(2) ) || 0,
             discount : parseFloat( totalDiscount?.toFixed(2) ) || 0,
+            personalTotal : parseFloat( totalPersonalLiters.toFixed(2) ) || 0,
+            personalDiscount : parseFloat( totalPersonalDiscount?.toFixed(2) ) || 0,
             level,
         };
     },
