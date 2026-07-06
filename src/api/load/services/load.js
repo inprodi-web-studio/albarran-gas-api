@@ -31,6 +31,31 @@ const getPromotionDiscountPerLiter = (rewardSummary = {}) => {
         : directDiscountPerLiter;
 };
 
+const findLevelByLiters = async (strapi, model, totalLiters) => {
+    if ( totalLiters > 0 ) {
+        const level = await strapi.query(model).findOne({
+            where : {
+                min : {
+                    $lt : totalLiters,
+                },
+                max : {
+                    $gte : totalLiters,
+                },
+            },
+        });
+
+        if (level) {
+            return level;
+        }
+    }
+
+    return strapi.query(model).findOne({
+        where : {
+            min : 0,
+        },
+    });
+};
+
 module.exports = createCoreService(LOAD, ({ strapi }) => ({
     async getStats( customerId ) {
         const allLoads = await strapi.db.query(LOAD).findMany({
@@ -175,27 +200,11 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
                 return total + Number(item.quantity ?? 0);
             }, 0);
 
-            let fleetLevel;
-
-            if (totalFleetLiters > 0) {
-                fleetLevel = await strapi.query(FLEET_LEVEL).findOne({
-                    where : {
-                        min : {
-                            $lt : totalFleetLiters,
-                        },
-                        max : {
-                            $gte : totalFleetLiters,
-                        },
-                    },
-                });
-            } else {
-                fleetLevel = await strapi.query(FLEET_LEVEL).findOne({
-                    where : {
-                        min : 0,
-                    },
-                });
-            }
-
+            const fleetLevel = await findLevelByLiters(
+                strapi,
+                FLEET_LEVEL,
+                totalFleetLiters
+            );
             baseDiscount = toNumber(fleetLevel?.discount, FIRST_LOAD_DISCOUNT);
         } else {
             const personalLoads = await strapi.db.query(LOAD).findMany({
@@ -210,20 +219,12 @@ module.exports = createCoreService(LOAD, ({ strapi }) => ({
                 return total + Number(item.quantity ?? 0);
             }, 0);
 
-            if ( totalPersonalLiters > 0 ) {
-                const level = await strapi.query(CUSTOMER_LEVEL).findOne({
-                    where : {
-                        min : {
-                            $lt : totalPersonalLiters,
-                        },
-                        max : {
-                            $gte : totalPersonalLiters,
-                        },
-                    },
-                });
-
-                baseDiscount = toNumber(level?.discount, FIRST_LOAD_DISCOUNT);
-            }
+            const level = await findLevelByLiters(
+                strapi,
+                CUSTOMER_LEVEL,
+                totalPersonalLiters
+            );
+            baseDiscount = toNumber(level?.discount, FIRST_LOAD_DISCOUNT);
         }
 
         if ( promotionContext?.customer ) {
