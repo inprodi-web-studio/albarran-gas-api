@@ -18,7 +18,7 @@ const roles = {
                 auth : ["resetPassword_Customer"],
                 user : ["updateProfile_Customer"],
             },
-            [LOAD] : ["getLoads_Customer"],
+            [LOAD] : ["getLoads_Customer", "getPendingSummary_Customer", "markSummarySeen_Customer"],
             [BANNER] : ["findMany_Customer"],
             [PROMOTION] : ["find"],
             [FISCAL] : ["find", "create", "update", "delete"],

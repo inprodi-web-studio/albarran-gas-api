@@ -171,6 +171,8 @@ const loadFields = {
     "externalLoadKey",
     "externalLoadId",
     "externalBombId",
+    "customerSummarySeenAt",
+    "customerSummaryPending",
     "date",
     "branch",
   ],
@@ -200,6 +202,50 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     loads.stats = stats;
 
     return loads;
+  },
+
+  async getPendingSummary_Customer(ctx) {
+    const { id } = ctx.state.user;
+
+    const load = await strapi.db.query(LOAD).findOne({
+      where: {
+        customer: id,
+        customerSummaryPending: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: loadFields.fields,
+      populate: loadFields.populate,
+    });
+
+    return load || null;
+  },
+
+  async markSummarySeen_Customer(ctx) {
+    const { id } = ctx.state.user;
+    const { uuid } = ctx.params;
+
+    const load = await strapi.db.query(LOAD).findOne({
+      where: {
+        customer: id,
+        uuid,
+      },
+      select: ["id", "uuid"],
+    });
+
+    if (!load) {
+      ctx.notFound("Load not found.");
+      return;
+    }
+
+    return strapi.entityService.update(LOAD, load.id, {
+      data: {
+        customerSummarySeenAt: new Date(),
+        customerSummaryPending: false,
+      },
+      fields: ["uuid", "customerSummarySeenAt", "customerSummaryPending"],
+    });
   },
 
   async getLoads(ctx) {
@@ -318,6 +364,7 @@ module.exports = createCoreController(LOAD, ({ strapi }) => ({
     data.externalLoadId = externalLoadId;
     data.externalBombId = externalBombId;
     data.externalLoadKey = externalLoadKey;
+    data.customerSummaryPending = true;
 
     let activeShift = await strapi.db.query(DISPATCHER_SHIFT).findOne({
       where: {

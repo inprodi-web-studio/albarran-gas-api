@@ -64,6 +64,13 @@
     "externalBombId": {
       "type": "string"
     },
+    "customerSummarySeenAt": {
+      "type": "datetime"
+    },
+    "customerSummaryPending": {
+      "type": "boolean",
+      "default": false
+    },
     "date": {
       "type": "string"
     },
